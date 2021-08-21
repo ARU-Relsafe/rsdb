@@ -3,8 +3,9 @@ Object Model for Spectrum Risk Database Version 1.3.2
 """
 from enum import Enum
 
+import sqlalchemy
 from sqlalchemy import Boolean, Column, DateTime, Float, Identity, Index, Integer, LargeBinary, SmallInteger, Table, \
-    Unicode, text, ForeignKey
+    Unicode, text, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.mssql import NTEXT
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -16,10 +17,10 @@ class Acase(Base):
     """Задание на расчёт последовательностей (Базовый класс)"""
     __tablename__ = 'Acase'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
     __mapper_args__ = {"polymorphic_on": Type}
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     ResType = Column(SmallInteger)
@@ -39,6 +40,10 @@ class Acase(Base):
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     Flag = Column(Boolean)
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
 
 
 class FailureTreeAcase(Acase):
@@ -72,8 +77,8 @@ class GroupAcase(Acase):
 class AcaseBC(Base):
     __tablename__ = 'AcaseBC'
 
-    RecType = Column(SmallInteger, primary_key=True, nullable=False)
-    RecNum = Column(Integer, primary_key=True, nullable=False)
+    RecType = Column(SmallInteger, primary_key = True, nullable = False)
+    RecNum = Column(Integer, primary_key = True, nullable = False)
     BCType = Column(SmallInteger)
     BCNum = Column(Integer)
     flag = Column(Boolean)
@@ -83,9 +88,9 @@ class AcaseET(Base):
     """Таблица связи Acase и ET"""
     __tablename__ = 'AcaseET'
 
-    AcaseNum = Column(Integer, primary_key=True, nullable=False)
-    RecType = Column(SmallInteger, primary_key=True, nullable=False)
-    RecNum = Column(Integer, primary_key=True, nullable=False)
+    AcaseNum = Column(Integer, primary_key = True, nullable = False)
+    RecType = Column(SmallInteger, primary_key = True, nullable = False)
+    RecNum = Column(Integer, primary_key = True, nullable = False)
     AcaseType = Column(SmallInteger)
     flag = Column(Boolean)
 
@@ -93,8 +98,8 @@ class AcaseET(Base):
 class AcaseSpec(Base):
     __tablename__ = 'AcaseSpec'
 
-    AcaseNum = Column(Integer, primary_key=True, nullable=False)
-    SetupType = Column(SmallInteger, primary_key=True, nullable=False)
+    AcaseNum = Column(Integer, primary_key = True, nullable = False)
+    SetupType = Column(SmallInteger, primary_key = True, nullable = False)
     AcaseType = Column(SmallInteger)
     SetupNum = Column(Integer)
     DoAna = Column(SmallInteger)
@@ -105,9 +110,9 @@ class AcaseSpec(Base):
 class AttachmentRefs(Base):
     __tablename__ = 'AttachmentRefs'
 
-    IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True, nullable=False)
-    RecType = Column(SmallInteger, primary_key=True, nullable=False)
-    RecNum = Column(Integer, primary_key=True, nullable=False)
+    IDNum = Column(Integer, Identity(start = 1, increment = 1), primary_key = True, nullable = False)
+    RecType = Column(SmallInteger, primary_key = True, nullable = False)
+    RecNum = Column(Integer, primary_key = True, nullable = False)
     Attachment = Column(Unicode(4000))
 
 
@@ -118,9 +123,9 @@ class Attributes(Base):
     """
     __tablename__ = 'Attrib'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -131,13 +136,17 @@ class Attributes(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class BCHouse(Base):
     __tablename__ = 'BCHouse'
 
-    BCNum = Column(Integer, primary_key=True, nullable=False)
-    RecType = Column(SmallInteger, primary_key=True, nullable=False)
-    RecNum = Column(Integer, primary_key=True, nullable=False)
+    BCNum = Column(Integer, primary_key = True, nullable = False)
+    RecType = Column(SmallInteger, primary_key = True, nullable = False)
+    RecNum = Column(Integer, primary_key = True, nullable = False)
     BCType = Column(SmallInteger)
     BCValue = Column(Unicode(10))
     flag = Column(Boolean)
@@ -150,9 +159,9 @@ class BCSet(Base):
     """
     __tablename__ = 'BCSet'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -163,30 +172,34 @@ class BCSet(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class BCSetAtt(Base):
     __tablename__ = 'BCSetAtt'
 
-    BCNum = Column(Integer, primary_key=True, nullable=False)
-    AttNum = Column(Integer, primary_key=True, nullable=False)
+    BCNum = Column(Integer, primary_key = True, nullable = False)
+    AttNum = Column(Integer, primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
 t_BEBERelations = Table(
-    'BEBERelations', metadata,
-    Column('EventNum', Integer),
-    Column('Type', SmallInteger),
-    Column('Formula', Unicode(4000)),
-    Column('Tag', SmallInteger)
+        'BEBERelations', metadata,
+        Column('EventNum', Integer),
+        Column('Type', SmallInteger),
+        Column('Formula', Unicode(4000)),
+        Column('Tag', SmallInteger)
 )
 
 
 class CCFEventPar(Base):
     __tablename__ = 'CCFEventPar'
 
-    IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
-    EventType = Column(SmallInteger, nullable=False)
-    EventNum = Column(Integer, nullable=False)
+    IDNum = Column(Integer, Identity(start = 1, increment = 1), primary_key = True)
+    EventType = Column(SmallInteger, nullable = False)
+    EventNum = Column(Integer, nullable = False)
     ParType = Column(SmallInteger)
     ParNum = Column(Integer)
     Value = Column(Float(24))
@@ -200,9 +213,9 @@ class CCFGroup(Base):
     """
     __tablename__ = 'CCFGroup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     CCFModel = Column(SmallInteger)
@@ -215,13 +228,17 @@ class CCFGroup(Base):
     flag = Column(Boolean)
     CCFAlpha8Bound = Column(Integer)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class CCFRec(Base):
     __tablename__ = 'CCFRec'
 
-    CCGType = Column(SmallInteger, primary_key=True, nullable=False)
-    CCGNum = Column(Integer, primary_key=True, nullable=False)
-    EventNum = Column(Integer, primary_key=True, nullable=False)
+    CCGType = Column(SmallInteger, primary_key = True, nullable = False)
+    CCGNum = Column(Integer, primary_key = True, nullable = False)
+    EventNum = Column(Integer, primary_key = True, nullable = False)
     EventType = Column(SmallInteger)
     flag = Column(Boolean)
 
@@ -229,22 +246,31 @@ class CCFRec(Base):
 class CCGBasic(Base):
     __tablename__ = 'CCGBasic'
 
-    CCGType = Column(SmallInteger, primary_key=True, nullable=False)
-    CCGNum = Column(Integer, primary_key=True, nullable=False)
-    EventNum = Column(Integer, primary_key=True, nullable=False)
+    CCGType = Column(SmallInteger, primary_key = True, nullable = False)
+    CCGNum = Column(Integer, primary_key = True, nullable = False)
+    EventNum = Column(Integer, primary_key = True, nullable = False)
     EventType = Column(SmallInteger)
     flag = Column(Boolean)
 
 
 class CompEvent(Base):
     __tablename__ = 'CompEvent'
-
-    RecNum1 = Column(Integer, primary_key=True, nullable=False)
-    RecNum2 = Column(Integer, primary_key=True, nullable=False)
-    RecType1 = Column(SmallInteger)
-    RecType2 = Column(SmallInteger)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['RecType1', 'RecNum1'],
+            ['Components.Type','Components.Num'],
+            name = 'fk_comp_entry'),
+        ForeignKeyConstraint(
+            ['RecType2', 'RecNum2'],
+            ['Events.Type', 'Events.Num'],
+            name = 'fk_event_entry'),
+    )
+    RecNum1 = Column(Integer, primary_key = True, nullable = False)
+    RecNum2 = Column(Integer, primary_key = True, nullable = False)
+    RecType1 = Column(SmallInteger, default = 24)
+    RecType2 = Column(SmallInteger, default = 5)
     QueryFlag = Column(SmallInteger)
-    FailMode = Column(Integer)
+    FailMode = Column(Integer, ForeignKey('FailMode.Num'))
     flag = Column(Boolean)
 
 
@@ -255,11 +281,11 @@ class Components(Base):
     """
     __tablename__ = 'Components'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False, default = 24)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
-    Tag = Column(SmallInteger)
+    Tag = Column(SmallInteger, default = 0)
     EditDate = Column(DateTime)
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
@@ -268,20 +294,32 @@ class Components(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    BasicEvents = relationship(
+            lambda: BasicEvents,
+            secondary = lambda: CompEvent.__table__,
+            primaryjoin = lambda: Components.Num == CompEvent.RecNum1 and Components.Type == CompEvent.Type1,
+            secondaryjoin = lambda: BasicEvents.Num == CompEvent.RecNum2 and BasicEvents.Type == CompEvent.Type2,
+            back_populates = 'Components')
+
+    Systems = relationship(lambda: Systems, secondary=lambda: SysComp, back_populates = 'Components')
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
 
 class DistPoints(Base):
     __tablename__ = 'DistPoints'
 
-    ParNum = Column(Integer, primary_key=True, nullable=False)
-    Y = Column(Float(24), primary_key=True, nullable=False)
+    ParNum = Column(Integer, primary_key = True, nullable = False)
+    Y = Column(Float(24), primary_key = True, nullable = False)
     X = Column(Float(24))
     flag = Column(Boolean)
 
 
 t_Duplicated = Table(
-    'Duplicated', metadata,
-    Column('OldNum', Integer, nullable=False),
-    Column('NewNum', Integer)
+        'Duplicated', metadata,
+        Column('OldNum', Integer, nullable = False),
+        Column('NewNum', Integer)
 )
 
 
@@ -289,9 +327,9 @@ class EventTrees(Base):
     """Деревья событий """
     __tablename__ = 'ET'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     Align = Column(SmallInteger)
@@ -303,12 +341,16 @@ class EventTrees(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class ETEvents(Base):
     __tablename__ = 'ETEvents'
 
-    ETNum = Column(Integer, primary_key=True, nullable=False)
-    Pos = Column(SmallInteger, primary_key=True, nullable=False)
+    ETNum = Column(Integer, primary_key = True, nullable = False)
+    Pos = Column(SmallInteger, primary_key = True, nullable = False)
     EventType = Column(SmallInteger)
     EventNum = Column(Integer)
     flag = Column(Boolean)
@@ -320,8 +362,8 @@ class ETNodes(Base):
     """
     __tablename__ = 'ETNodes'
 
-    ETNum = Column(Integer, primary_key=True, nullable=False)
-    Num = Column(SmallInteger, primary_key=True, nullable=False)
+    ETNum = Column(Integer, primary_key = True, nullable = False)
+    Num = Column(SmallInteger, primary_key = True, nullable = False)
     FatherNum = Column(SmallInteger)
     HPos = Column(SmallInteger)
     VPos = Column(SmallInteger)
@@ -332,8 +374,8 @@ class ETNodes(Base):
 class ETSeq(Base):
     __tablename__ = 'ET_Seq'
 
-    ETNum = Column(Integer, primary_key=True, nullable=False)
-    SeqPos = Column(SmallInteger, primary_key=True, nullable=False)
+    ETNum = Column(Integer, primary_key = True, nullable = False)
+    SeqPos = Column(SmallInteger, primary_key = True, nullable = False)
     SeqNum = Column(Integer)
     FatherNum = Column(SmallInteger)
     flag = Column(Boolean)
@@ -341,24 +383,34 @@ class ETSeq(Base):
 
 class EventAtt(Base):
     __tablename__ = 'EventAtt'
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['EventNum', 'EventType'],
+            ['Events.Num', 'Events.Type'],
+            name = 'fk_events_entry'),
+        ForeignKeyConstraint(
+            ['AttNum', 'AttType'],
+            ['Attrib.Num','Attrib.Type'],
+            name = 'fk_attrib_entry'),
+    )
 
-    EventNum = Column(Integer, primary_key=True, nullable=False)
-    AttNum = Column(Integer, primary_key=True, nullable=False)
+    EventNum = Column(Integer, primary_key = True, nullable = False)
+    AttNum = Column(Integer, primary_key = True, nullable = False)
     EventType = Column(SmallInteger)
     AttType = Column(SmallInteger)
     flag = Column(Boolean)
 
 
 t_EventExch = Table(
-    'EventExch', metadata,
-    Column('EventType', SmallInteger),
-    Column('EventNum', Integer, nullable=False),
-    Column('CondType', SmallInteger),
-    Column('CondNum', Integer),
-    Column('ExchType', SmallInteger),
-    Column('ExchNum', Integer),
-    Column('flag', Boolean),
-    Index('IX_EventExch', 'EventNum', 'CondNum', unique=True)
+        'EventExch', metadata,
+        Column('EventType', SmallInteger),
+        Column('EventNum', Integer, nullable = False),
+        Column('CondType', SmallInteger),
+        Column('CondNum', Integer),
+        Column('ExchType', SmallInteger),
+        Column('ExchNum', Integer),
+        Column('flag', Boolean),
+        Index('IX_EventExch', 'EventNum', 'CondNum', unique = True)
 )
 
 
@@ -369,9 +421,9 @@ class EventGroup(Base):
     """
     __tablename__ = 'EventGroup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -382,12 +434,16 @@ class EventGroup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class EventPar(Base):
     __tablename__ = 'EventPar'
 
-    EventNum = Column(Integer, primary_key=True, nullable=False)
-    ParType = Column(SmallInteger, primary_key=True, nullable=False)
+    EventNum = Column(Integer, primary_key = True, nullable = False)
+    ParType = Column(SmallInteger, primary_key = True, nullable = False)
     EventType = Column(SmallInteger)
     ParNum = Column(Integer)
     Value = Column(Float(24))
@@ -395,19 +451,19 @@ class EventPar(Base):
 
 
 class SymbolEnum(Enum):
+    N = sqlalchemy.sql.null()
     Reserv1 = 0
-    House = 3
     Oval = 1
-    CCFOval = 4
-    Comment = 500
     Diamond = 2
-    XOR = 400
-    KN = 300
+    House = 3
+    CCFOval = 4
+    Undefine = 5
     OR = 100
     AND = 200
-    N = None
-    Undefine = 5
-    Continuation = 90
+    KN = 300
+    XOR = 400
+    Comment = 500
+    Continuation = 900
 
 
 class Events(Base):
@@ -417,10 +473,10 @@ class Events(Base):
     """
     __tablename__ = 'Events'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
     __mapper_args__ = {"polymorphic_on": Type}
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     Symbol = Column(SmallInteger)
@@ -437,6 +493,12 @@ class Events(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    Nodes = relationship(lambda: FTNodes, back_populates = 'Event')
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class BasicEvents(Events):
     """
@@ -444,12 +506,45 @@ class BasicEvents(Events):
     """
     __mapper_args__ = {'polymorphic_identity': 5}
 
+    Components = relationship(
+            lambda: Components,
+            secondary = lambda: CompEvent.__table__,
+            primaryjoin = lambda: BasicEvents.Num == CompEvent.RecNum2 and BasicEvents.Type == CompEvent.Type2,
+            secondaryjoin = lambda: Components.Num == CompEvent.RecNum1 and Components.Type == CompEvent.Type1,
+            back_populates = 'BasicEvents')
+
     Attributes = relationship(
-        lambda: Attributes,
-        secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: BasicEvents.Num == EventAtt.EventNum and BasicEvents.Type == EventAtt.EventType,
-        secondaryjoin=lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
-        backref='BasicEvents')
+            lambda: Attributes,
+            secondary = lambda: EventAtt.__table__,
+            primaryjoin = lambda: BasicEvents.Num == EventAtt.EventNum and BasicEvents.Type == EventAtt.EventType,
+            secondaryjoin = lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
+            backref = 'BasicEvents')
+
+    #Nodes = relationship(
+    #        lambda: FTNodes,
+    #        primaryjoin = lambda: BasicEvents.Num==FTNodes.RecNum and BasicEvents.Type==FTNodes.RecType,
+    #        backref = "BasicEvents")
+
+    #GetNodes = relationship(
+    #        lambda: FTNodes,
+    #        secondary =lambda: FTNodes.__table__,
+    #        primaryjoin= lambda:BasicEvents.Num==FTNodes.RecNum and BasicEvents.Type==FTNodes.RecType,
+    #        backref="BasicEvents")
+
+    #FatherGate = relationship(
+    #        lambda: Gates.__tablename__,
+    #
+    #)
+    CCFGroup = relationship(
+            lambda: CCFGroup,
+            secondary = lambda: CCGBasic.__table__,
+            primaryjoin = lambda: BasicEvents.Num == CCGBasic.EventNum and BasicEvents.Type==CCGBasic.EventType,
+            secondaryjoin = lambda: CCGBasic.CCGNum == CCFGroup.Num and CCGBasic.CCGType==CCFGroup.Type,
+            uselist = False,
+            backref = "BasicEvents")
+
+
+
 
 
 class Gates(Events):
@@ -457,12 +552,16 @@ class Gates(Events):
     __mapper_args__ = {'polymorphic_identity': 6}
 
     Attributes = relationship(
-        lambda: Attributes,
-        secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: Gates.Num == EventAtt.EventNum and Gates.Type == EventAtt.EventType,
-        secondaryjoin=lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
-        backref='Events')
+            lambda: Attributes,
+            secondary = lambda: EventAtt.__table__,
+            primaryjoin = lambda: Gates.Num == EventAtt.EventNum and Gates.Type == EventAtt.EventType,
+            secondaryjoin = lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
+            backref = 'Events')
 
+    #Nodes = relationship(
+    #        lambda: FTNodes,
+    #        primaryjoin = lambda: BasicEvents.Num==FTNodes.RecNum and BasicEvents.Type==FTNodes.RecType,
+    #        backref = 'Gate')
 
 class HouseEvents(Events):
     """
@@ -472,11 +571,11 @@ class HouseEvents(Events):
     __mapper_args__ = {'polymorphic_identity': 7}
 
     Attributes = relationship(
-        lambda: Attributes,
-        secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: HouseEvents.Num == EventAtt.EventNum and HouseEvents.Type == EventAtt.EventType,
-        secondaryjoin=lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
-        backref='HouseEvents')
+            lambda: Attributes,
+            secondary = lambda: EventAtt.__table__,
+            primaryjoin = lambda: HouseEvents.Num == EventAtt.EventNum and HouseEvents.Type == EventAtt.EventType,
+            secondaryjoin = lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
+            backref = 'HouseEvents')
 
 
 class ConsequenceEvents(Events):
@@ -492,11 +591,11 @@ class TemplateEvents(Events):
     """
     __mapper_args__ = {'polymorphic_identity': 9}
     Attributes = relationship(
-        lambda: Attributes,
-        secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: TemplateEvents.Num == EventAtt.EventNum and TemplateEvents.Type == EventAtt.EventType,
-        secondaryjoin=lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
-        backref='TemplateEvents')
+            lambda: Attributes,
+            secondary = lambda: EventAtt.__table__,
+            primaryjoin = lambda: TemplateEvents.Num == EventAtt.EventNum and TemplateEvents.Type == EventAtt.EventType,
+            secondaryjoin = lambda: Attributes.Num == EventAtt.AttNum and Attributes.Type == EventAtt.AttType,
+            backref = 'TemplateEvents')
 
 
 class InitiatingEvent(Events):
@@ -526,8 +625,8 @@ class CCFEvent2(Events):
 class FEGroup(Base):
     __tablename__ = 'FEGroup'
 
-    ETNum = Column(Integer, primary_key=True, nullable=False)
-    FEMin = Column(SmallInteger, primary_key=True, nullable=False)
+    ETNum = Column(Integer, primary_key = True, nullable = False)
+    FEMin = Column(SmallInteger, primary_key = True, nullable = False)
     FEMax = Column(SmallInteger)
     Text = Column(Unicode(100))
     flag = Column(Boolean)
@@ -540,9 +639,9 @@ class FunctionEventInputs(Base):
     """
     __tablename__ = 'FEInputs'
 
-    AltNum = Column(Integer, primary_key=True, nullable=False)
-    FEType = Column(SmallInteger, nullable=False)
-    FENum = Column(Integer, primary_key=True, nullable=False)
+    AltNum = Column(Integer, primary_key = True, nullable = False)
+    FEType = Column(SmallInteger, nullable = False)
+    FENum = Column(Integer, primary_key = True, nullable = False)
     InputType = Column(SmallInteger)
     InputNum = Column(Integer)
     BCNum = Column(Integer)
@@ -553,10 +652,10 @@ class FaultTrees(Base):
     """ Дерево отказов """
     __tablename__ = 'FT'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
     __mapper_args__ = {"polymorphic_on": Type}
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     Align = Column(SmallInteger)
@@ -567,41 +666,41 @@ class FaultTrees(Base):
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
-    IsPositioned = Column(SmallInteger, server_default=text('((0))'))
+    IsPositioned = Column(SmallInteger, server_default = text('((0))'))
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
 
     """Ноды связанные с деревом (События, гейты, итд) """
-    Nodes = relationship(lambda: Events,
-                         secondary=lambda: FTNodes.__table__,
-                         primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
-                         secondaryjoin=lambda: FTNodes.RecNum == Events.Num and FTNodes.RecType == Events.Type,
-                         backref='FaultTrees')
+    Nodes = relationship(lambda: FTNodes, back_populates='FaultTree')
 
     """Топ(верхняя) нода"""
     TopGate = relationship(Gates,
-                           secondary=lambda: FTNodes.__table__,
-                           primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum and FTNodes.FatherGateNum == 0,
-                           secondaryjoin=lambda: FTNodes.RecNum == Gates.Num and FTNodes.RecType == Gates.Type,
-                           uselist=False,
-                           viewonly=True)
+                           secondary = lambda: FTNodes.__table__,
+                           primaryjoin = lambda: FaultTrees.Num == FTNodes.FTNum and FTNodes.FatherGateNum == 0,
+                           secondaryjoin = lambda: FTNodes.RecNum == Gates.Num and FTNodes.RecType == Gates.Type,
+                           uselist = False,
+                           viewonly = True)
 
     """Трансферные гейты """
     Transfers = relationship(lambda: Gates,
-                             secondary=lambda: FTNodes.__table__,
-                             primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum and FTNodes.Transfer == -1,
-                             secondaryjoin=lambda: FTNodes.RecNum == Gates.Num,
-                             viewonly=True)
+                             secondary = lambda: FTNodes.__table__,
+                             primaryjoin = lambda: FaultTrees.Num == FTNodes.FTNum and FTNodes.Transfer == -1,
+                             secondaryjoin = lambda: FTNodes.RecNum == Gates.Num,
+                             viewonly = True)
 
     Gates = relationship(lambda: Gates,
-                         secondary=lambda: FTNodes.__table__,
-                         primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
-                         secondaryjoin=lambda: FTNodes.RecNum == Gates.Num,
-                         viewonly=True)
+                         secondary = lambda: FTNodes.__table__,
+                         primaryjoin = lambda: FaultTrees.Num == FTNodes.FTNum,
+                         secondaryjoin = lambda: FTNodes.RecNum == Gates.Num,
+                         viewonly = True)
 
     BasicEvents = relationship(lambda: BasicEvents,
-                               secondary=lambda: FTNodes.__table__,
-                               primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
-                               secondaryjoin=lambda: FTNodes.RecNum == BasicEvents.Num,
-                               viewonly=True)
+                               secondary = lambda: FTNodes.__table__,
+                               primaryjoin = lambda: FaultTrees.Num == FTNodes.FTNum,
+                               secondaryjoin = lambda: FTNodes.RecNum == BasicEvents.Num,
+                               viewonly = True)
 
 
 class CommonFailureTree(FaultTrees):
@@ -617,6 +716,10 @@ class CCFFailureTree(FaultTrees):
     """
     __mapper_args__ = {'polymorphic_identity': 4}
 
+class TransferEnum(Enum):
+    Yes = -1
+    Not = 0
+
 
 class FTNodes(Base):
     """
@@ -624,28 +727,40 @@ class FTNodes(Base):
     Объекты иерархически связанные между собой из которых набирается дерево отказов
     """
     __tablename__ = 'FTNodes'
+    __table_args__ = (
+        ForeignKeyConstraint(
+                ["RecType", "RecNum"],
+                ["Events.Type", "Events.Num"],
+                name = 'fk_event_entry'),
+    )
 
-    FTNum = Column(Integer, primary_key=True, nullable=False)
-    FatherGateNum = Column(Integer, primary_key=True, nullable=False)
+    FTNum = Column(Integer, ForeignKey('FT.Num'), primary_key = True, nullable = False)
+    FatherGateNum = Column(Integer, ForeignKey("FTNodes.RecNum"), primary_key = True, nullable = False)
     """ см. Event.Type """
-    RecType = Column(SmallInteger, primary_key=True, nullable=False)
-    RecNum = Column(Integer, primary_key=True, nullable=False)
-    """ Позиция по горизонтали в FT """
-    Pos = Column(SmallInteger, primary_key=True, nullable=False)
+    RecType = Column(SmallInteger, primary_key = True, nullable = False)
+    RecNum = Column(Integer, primary_key = True, nullable = False)
+    """ Позиция по горизонтали в дереве отказов. Автоматически обновляется при открытии дерева в оболочке RiskSpectrum PSA """
+    Pos = Column(SmallInteger, primary_key = True, nullable = False)
     """ Позиция по вертикали в FT """
-    InLevel = Column(SmallInteger, primary_key=True, nullable=False)
+    InLevel = Column(SmallInteger, primary_key = True, nullable = False)
     """ -1 - трансфер; 0 - не трансфер """
-    Transfer = Column(SmallInteger)
-    Neg = Column(SmallInteger)
+    Transfer = Column(SmallInteger, default = 0)
+    Neg = Column(SmallInteger, default = 0)
     flag = Column(Boolean)
 
+    """Событие ноды"""
+    Event = relationship(Events, back_populates= 'Nodes', uselist=False, lazy='select')
+    """Верхняя нода"""
+    FatherNode = relationship(lambda: FTNodes,  remote_side=[RecNum], backref='ChildNodes', lazy='select')
+    """Дерево отказов"""
+    FaultTree = relationship(FaultTrees,  back_populates='Nodes', uselist=False, lazy='select')
 
 class FailMode(Base):
     __tablename__ = 'FailMode'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -656,14 +771,18 @@ class FailMode(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class GroupSpec(Base):
     __tablename__ = 'GroupSpec'
 
-    IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
-    RecType = Column(SmallInteger, nullable=False)
-    RecNum = Column(Integer, nullable=False)
-    Type = Column(SmallInteger, nullable=False)
+    IDNum = Column(Integer, Identity(start = 1, increment = 1), primary_key = True)
+    RecType = Column(SmallInteger, nullable = False)
+    RecNum = Column(Integer, nullable = False)
+    Type = Column(SmallInteger, nullable = False)
     IDFilter = Column(Unicode(20))
     flag = Column(Boolean)
 
@@ -675,9 +794,9 @@ class ImpSetup(Base):
     """
     __tablename__ = 'ImpSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -701,11 +820,15 @@ class ImpSetup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class LockUnLockHistory(Base):
     __tablename__ = 'LockUnLockHistory'
 
-    Num = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    Num = Column(Integer, Identity(start = 1, increment = 1), primary_key = True)
     EditUid = Column(Integer)
     EditDate = Column(DateTime)
     LockStatus = Column(Boolean)
@@ -714,9 +837,9 @@ class LockUnLockHistory(Base):
 class MCSPP(Base):
     __tablename__ = 'MCSPP'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -727,14 +850,18 @@ class MCSPP(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class MCSPPRules(Base):
     __tablename__ = 'MCSPPRules'
 
-    IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
-    RecType = Column(SmallInteger, nullable=False)
-    RecNum = Column(Integer, nullable=False)
-    Type = Column(SmallInteger, nullable=False)
+    IDNum = Column(Integer, Identity(start = 1, increment = 1), primary_key = True)
+    RecType = Column(SmallInteger, nullable = False)
+    RecNum = Column(Integer, nullable = False)
+    Type = Column(SmallInteger, nullable = False)
     IDFilter1 = Column(Unicode(21))
     IDFilter2 = Column(Unicode(21))
     IDFilter3 = Column(Unicode(21))
@@ -751,9 +878,9 @@ class MCSPPRules(Base):
 class MCSPPSetup(Base):
     __tablename__ = 'MCSPPSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -764,12 +891,16 @@ class MCSPPSetup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class MCSPPSetupAction(Base):
     __tablename__ = 'MCSPPSetupAction'
 
-    SetupNum = Column(Integer, primary_key=True, nullable=False)
-    PPNum = Column(Integer, primary_key=True, nullable=False)
+    SetupNum = Column(Integer, primary_key = True, nullable = False)
+    PPNum = Column(Integer, primary_key = True, nullable = False)
     SetupType = Column(SmallInteger)
     PPType = Column(SmallInteger)
     flag = Column(Boolean)
@@ -782,9 +913,9 @@ class MCSSetup(Base):
     """
     __tablename__ = 'MCSSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -808,13 +939,17 @@ class MCSSetup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class MemoRefs(Base):
     __tablename__ = 'MemoRefs'
 
-    MemoNum = Column(Integer, primary_key=True, nullable=False)
-    RecType = Column(SmallInteger, primary_key=True, nullable=False)
-    RecNum = Column(Integer, primary_key=True, nullable=False)
+    MemoNum = Column(Integer, primary_key = True, nullable = False)
+    RecType = Column(SmallInteger, primary_key = True, nullable = False)
+    RecNum = Column(Integer, primary_key = True, nullable = False)
     MemoType = Column(SmallInteger)
     flag = Column(Boolean)
 
@@ -826,9 +961,9 @@ class Memo(Base):
     """
     __tablename__ = 'Memo'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     Note = Column(NTEXT(1073741823))
@@ -839,6 +974,11 @@ class Memo(Base):
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
     '''
     FaultTrees = relationship(FaultTrees,
                             secondary=MemoRefs.__table__,
@@ -879,19 +1019,19 @@ class Memo(Base):
 
 
 t_MuxEvents = Table(
-    'MuxEvents', metadata,
-    Column('MuxType', SmallInteger),
-    Column('MuxNum', Integer),
-    Column('EventType', SmallInteger),
-    Column('EventNum', Integer)
+        'MuxEvents', metadata,
+        Column('MuxType', SmallInteger),
+        Column('MuxNum', Integer),
+        Column('EventType', SmallInteger),
+        Column('EventNum', Integer)
 )
 
 t_MuxSets = Table(
-    'MuxSets', metadata,
-    Column('Num', Integer, Identity(start=1, increment=1), nullable=False),
-    Column('Type', SmallInteger),
-    Column('ID', Unicode(20)),
-    Column('Tag', SmallInteger)
+        'MuxSets', metadata,
+        Column('Num', Integer, Identity(start = 1, increment = 1), nullable = False),
+        Column('Type', SmallInteger),
+        Column('ID', Unicode(20)),
+        Column('Tag', SmallInteger)
 )
 
 
@@ -901,10 +1041,10 @@ class Params(Base):
     Объекты, содержащие численные значения, используемые при квантификации моделей.
     """
     __tablename__ = 'Params'
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
     __mapper_args__ = {"polymorphic_on": Type}
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     Mean = Column(Float(24))
@@ -924,6 +1064,10 @@ class Params(Base):
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
 
 
 class ProbabilityParam(Params):
@@ -1051,26 +1195,26 @@ class Alpha8FactorParam(Params):
 
 
 t_ProjSettings = Table(
-    'ProjSettings', metadata,
-    Column('Num', Integer, Identity(start=1, increment=1), nullable=False),
-    Column('Type', SmallInteger),
-    Column('ID', Unicode(40)),
-    Column('SettingValue', Unicode(40)),
-    Column('Tag', SmallInteger)
+        'ProjSettings', metadata,
+        Column('Num', Integer, Identity(start = 1, increment = 1), nullable = False),
+        Column('Type', SmallInteger),
+        Column('ID', Unicode(40)),
+        Column('SettingValue', Unicode(40)),
+        Column('Tag', SmallInteger)
 )
 
 
 class Propagated(Base):
     __tablename__ = 'Propagated'
 
-    Num = Column(Integer, primary_key=True)
-    OriginalState = Column(SmallInteger, nullable=False)
+    Num = Column(Integer, primary_key = True)
+    OriginalState = Column(SmallInteger, nullable = False)
 
 
 class Properties(Base):
     __tablename__ = 'Properties'
 
-    Num = Column(SmallInteger, primary_key=True)
+    Num = Column(SmallInteger, primary_key = True)
     Text = Column(Unicode(300))
     EditDate = Column(DateTime)
     EditUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1080,31 +1224,35 @@ class Properties(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class RepFields(Base):
     __tablename__ = 'RepFields'
 
-    RepNum = Column(Integer, primary_key=True, nullable=False)
-    FieldNum = Column(SmallInteger, primary_key=True, nullable=False)
+    RepNum = Column(Integer, primary_key = True, nullable = False)
+    FieldNum = Column(SmallInteger, primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
 class RepRel(Base):
     __tablename__ = 'RepRel'
 
-    RepNum = Column(Integer, primary_key=True, nullable=False)
-    RelNum = Column(SmallInteger, primary_key=True, nullable=False)
+    RepNum = Column(Integer, primary_key = True, nullable = False)
+    RelNum = Column(SmallInteger, primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
 class Report(Base):
     __tablename__ = 'Report'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
-    ID = Column(Unicode(40), primary_key=True, nullable=False)
-    HeaderFirstPageOnly = Column(Boolean, nullable=False)
-    FooterLastPageOnly = Column(Boolean, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False)
+    ID = Column(Unicode(40), primary_key = True, nullable = False)
+    HeaderFirstPageOnly = Column(Boolean, nullable = False)
+    FooterLastPageOnly = Column(Boolean, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     DefaultValue = Column(SmallInteger)
@@ -1159,12 +1307,21 @@ class Report(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class SeqCon(Base):
     __tablename__ = 'SeqCon'
-
-    SeqNum = Column(Integer, primary_key=True, nullable=False)
-    EventNum = Column(Integer, primary_key=True, nullable=False)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['EventNum', 'EventType'],
+            ['Events.Num','Events.Type'],
+            name = 'fk_conseq_entry'),
+    )
+    SeqNum = Column(Integer, ForeignKey('Sequence.Num'), primary_key = True, nullable = False)
+    EventNum = Column(Integer, primary_key = True, nullable = False)
     EventType = Column(SmallInteger)
     flag = Column(Boolean)
 
@@ -1172,9 +1329,9 @@ class SeqCon(Base):
 class Sequence(Base):
     __tablename__ = 'Sequence'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(255), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(255), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -1191,8 +1348,8 @@ class Sequence(Base):
 class SysBC(Base):
     __tablename__ = 'SysBC'
 
-    SysNum = Column(Integer, primary_key=True, nullable=False)
-    BCNum = Column(Integer, primary_key=True, nullable=False)
+    SysNum = Column(Integer, primary_key = True, nullable = False)
+    BCNum = Column(Integer, primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
@@ -1201,9 +1358,18 @@ class SysComp(Base):
     Промежуточная таблица связи между системами и компонентами
     """
     __tablename__ = 'SysComp'
-
-    RecNum1 = Column(Integer, primary_key=True, nullable=False)
-    RecNum2 = Column(Integer, primary_key=True, nullable=False)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['RecType1', 'RecNum1'],
+            ['Systems.Type', 'Systems.Num'],
+            name = 'fk_system_entry'),
+        ForeignKeyConstraint(
+            ['RecType2', 'RecNum2'],
+            ['Components.Type','Components.Num'],
+            name = 'fk_comp_entry'),
+    )
+    RecNum1 = Column(Integer, primary_key = True, nullable = False)
+    RecNum2 = Column(Integer, primary_key = True, nullable = False)
     RecType1 = Column(SmallInteger)
     RecType2 = Column(SmallInteger)
     flag = Column(Boolean)
@@ -1214,9 +1380,18 @@ class SysFT(Base):
     Промежуточная таблица связи между системами и деревьями отказов
     """
     __tablename__ = 'SysFT'
-
-    RecNum1 = Column(Integer, primary_key=True, nullable=False)
-    RecNum2 = Column(Integer, primary_key=True, nullable=False)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['RecType1', 'RecNum1'],
+            ['Systems.Type','Systems.Num'],
+            name = 'fk_comp_entry'),
+        ForeignKeyConstraint(
+            ['RecType2', 'RecNum2'],
+            ['FT.Type', 'FT.Num'],
+            name = 'fk_event_entry'),
+    )
+    RecNum1 = Column(Integer, primary_key = True, nullable = False)
+    RecNum2 = Column(Integer, primary_key = True, nullable = False)
     RecType1 = Column(SmallInteger)
     RecType2 = Column(SmallInteger)
     flag = Column(Boolean)
@@ -1228,24 +1403,24 @@ class SysGate(Base):
     """
     __tablename__ = 'SysGate'
 
-    SysNum = Column(Integer, primary_key=True, nullable=False)
-    EventNum = Column(Integer, primary_key=True, nullable=False)
+    SysNum = Column(Integer, ForeignKey('Systems.Num'), primary_key = True, nullable = False)
+    EventNum = Column(Integer, ForeignKey('Events.Num'), primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
 class SysSubsys(Base):
     __tablename__ = 'SysSubsys'
 
-    SysNum = Column(Integer, primary_key=True, nullable=False)
-    SubsysNum = Column(Integer, primary_key=True, nullable=False)
+    SysNum = Column(Integer, ForeignKey('Systems.Num'), primary_key = True, nullable = False)
+    SubsysNum = Column(Integer, primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
 class SysTestProc(Base):
     __tablename__ = 'SysTestProc'
 
-    SysNum = Column(Integer, primary_key=True, nullable=False)
-    TestProcNum = Column(Integer, primary_key=True, nullable=False)
+    SysNum = Column(Integer, ForeignKey('Systems.Num'), primary_key = True, nullable = False)
+    TestProcNum = Column(Integer, ForeignKey('TestProc.Num'), primary_key = True, nullable = False)
     flag = Column(Boolean)
 
 
@@ -1256,9 +1431,9 @@ class Systems(Base):
     """
     __tablename__ = 'Systems'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -1270,47 +1445,52 @@ class Systems(Base):
     flag = Column(Boolean)
 
     SubSystems = relationship(lambda: Systems,
-                              secondary=SysSubsys.__table__,
-                              primaryjoin=lambda: Systems.Num == SysSubsys.SysNum,
-                              secondaryjoin=lambda: Systems.Num == SysSubsys.SubsysNum,
-                              backref='ParentSystems')
+                              secondary = SysSubsys.__table__,
+                              primaryjoin = lambda: Systems.Num == SysSubsys.SysNum,
+                              secondaryjoin = lambda: Systems.Num == SysSubsys.SubsysNum,
+                              backref = 'ParentSystems')
 
-    Components = relationship(Components,
-                              secondary=SysComp.__table__,
-                              primaryjoin=lambda: Systems.Num == SysComp.RecNum1 and Systems.Type == SysComp.RecType1,
-                              secondaryjoin=Components.Num == SysComp.RecNum2 and Components.Type == SysComp.RecType2,
-                              backref='Systems')
+    #Components = relationship(Components,
+    #                          secondary = SysComp.__table__,
+    #                          primaryjoin = lambda: Systems.Num == SysComp.RecNum1 and Systems.Type == SysComp.RecType1,
+    #                          secondaryjoin = Components.Num == SysComp.RecNum2 and Components.Type == SysComp.RecType2,
+    #                          backref = 'Systems')
+    Components = relationship(lambda: Components, secondary=SysComp, back_populates = 'Systems')
 
     FaultTrees = relationship(FaultTrees,
-                              secondary=SysFT.__table__,
-                              primaryjoin=lambda: Systems.Num == SysFT.RecNum1 and Systems.Type == SysFT.RecType1,
-                              secondaryjoin=FaultTrees.Num == SysFT.RecNum2 and FaultTrees.Type == SysFT.RecType2,
-                              backref='Systems')
+                              secondary = SysFT.__table__,
+                              primaryjoin = lambda: Systems.Num == SysFT.RecNum1 and Systems.Type == SysFT.RecType1,
+                              secondaryjoin = FaultTrees.Num == SysFT.RecNum2 and FaultTrees.Type == SysFT.RecType2,
+                              backref = 'Systems')
 
     TopGates = relationship(Gates,
-                            secondary=SysGate.__table__,
-                            primaryjoin=lambda: Systems.Num == SysGate.SysNum,
-                            secondaryjoin=Gates.Num == SysGate.EventNum,
-                            backref='Systems')
+                            secondary = SysGate.__table__,
+                            primaryjoin = lambda: Systems.Num == SysGate.SysNum,
+                            secondaryjoin = Gates.Num == SysGate.EventNum,
+                            backref = 'Systems')
 
     BCSets = relationship(lambda: BCSet,
-                          secondary=SysBC.__table__,
-                          primaryjoin=lambda: Systems.Num == SysBC.SysNum,
-                          secondaryjoin=lambda: BCSet.Num == SysBC.BCNum,
-                          backref='Systems')
+                          secondary = SysBC.__table__,
+                          primaryjoin = lambda: Systems.Num == SysBC.SysNum,
+                          secondaryjoin = lambda: BCSet.Num == SysBC.BCNum,
+                          backref = 'Systems')
     TestProcedures = relationship(lambda: TestProc,
-                                  secondary=SysTestProc.__table__,
-                                  primaryjoin=lambda: Systems.Num == SysTestProc.SysNum,
-                                  secondaryjoin=lambda: TestProc.Num == SysTestProc.TestProcNum,
-                                  backref='Systems')
+                                  secondary = SysTestProc.__table__,
+                                  primaryjoin = lambda: Systems.Num == SysTestProc.SysNum,
+                                  secondaryjoin = lambda: TestProc.Num == SysTestProc.TestProcNum,
+                                  backref = 'Systems')
+
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
 
 
 class TDSetup(Base):
     __tablename__ = 'TDSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     Time1 = Column(Float(24))
@@ -1326,13 +1506,17 @@ class TDSetup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class TestProc(Base):
     __tablename__ = 'TestProc'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime)
@@ -1343,12 +1527,16 @@ class TestProc(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class TestProcEvent(Base):
     __tablename__ = 'TestProc_Event'
 
-    TestProcNum = Column(Integer, primary_key=True, nullable=False)
-    EventNum = Column(Integer, primary_key=True, nullable=False)
+    TestProcNum = Column(Integer, ForeignKey('TestProc.Num'), primary_key = True, nullable = False)
+    EventNum = Column(Integer, ForeignKey('Events.Num'), primary_key = True, nullable = False)
     TestEff = Column(Float(24))
     flag = Column(Boolean)
 
@@ -1356,7 +1544,7 @@ class TestProcEvent(Base):
 class TextMacro(Base):
     __tablename__ = 'TextMacro'
 
-    Num = Column(SmallInteger, primary_key=True)
+    Num = Column(SmallInteger, primary_key = True)
     Text = Column(Unicode(100))
     EditDate = Column(DateTime)
     EditUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1366,11 +1554,15 @@ class TextMacro(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 class TopAcase(Base):
     __tablename__ = 'TopAcase'
 
-    AcaseNum = Column(Integer, primary_key=True)
+    AcaseNum = Column(Integer, primary_key = True)
     TopType = Column(SmallInteger)
     TopNum = Column(Integer)
     AcaseType = Column(SmallInteger)
@@ -1384,9 +1576,9 @@ class UncSetup(Base):
     """
     __tablename__ = 'UncSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -1407,14 +1599,18 @@ class UncSetup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid])
+
 
 t_UncertaintyFiles = Table(
-    'UncertaintyFiles', metadata,
-    Column('Num', Integer, Identity(start=1, increment=1), nullable=False),
-    Column('Type', SmallInteger),
-    Column('ID', Unicode(100)),
-    Column('FileBinary', LargeBinary),
-    Column('Tag', SmallInteger)
+        'UncertaintyFiles', metadata,
+        Column('Num', Integer, Identity(start = 1, increment = 1), nullable = False),
+        Column('Type', SmallInteger),
+        Column('ID', Unicode(100)),
+        Column('FileBinary', LargeBinary),
+        Column('Tag', SmallInteger)
 )
 
 
@@ -1425,11 +1621,11 @@ class Users(Base):
     """
     __tablename__ = 'Users'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
-    Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
-    ID = Column(Unicode(20), primary_key=True, nullable=False)
-    IsSecreteUser = Column(SmallInteger, nullable=False, server_default=text('((0))'))
-    IsRemoved = Column(SmallInteger, nullable=False, server_default=text('((0))'))
+    Type = Column(SmallInteger, primary_key = True, nullable = False)
+    Num = Column(Integer, Identity(start = 1, increment = 1), nullable = False, unique = True)
+    ID = Column(Unicode(20), primary_key = True, nullable = False)
+    IsSecreteUser = Column(SmallInteger, nullable = False, server_default = text('((0))'))
+    IsRemoved = Column(SmallInteger, nullable = False, server_default = text('((0))'))
     Password = Column(Unicode(20))
     Text = Column(Unicode(100))
     Tag = Column(SmallInteger)
@@ -1442,15 +1638,19 @@ class Users(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid], remote_side=[Num])
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid], remote_side=[Num])
+    ApprovedUser= relationship(lambda: Users, foreign_keys=[ApprovedUid], remote_side=[Num])
+
 
 class Sysdiagrams(Base):
     __tablename__ = 'sysdiagrams'
     __table_args__ = (
-        Index('UK_principal_name', 'principal_id', 'name', unique=True),
+        Index('UK_principal_name', 'principal_id', 'name', unique = True),
     )
 
-    name = Column(Unicode(128), nullable=False)
-    principal_id = Column(Integer, nullable=False)
-    diagram_id = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    name = Column(Unicode(128), nullable = False)
+    principal_id = Column(Integer, nullable = False)
+    diagram_id = Column(Integer, Identity(start = 1, increment = 1), primary_key = True)
     version = Column(Integer)
     definition = Column(LargeBinary)

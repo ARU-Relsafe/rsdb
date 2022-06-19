@@ -1,0 +1,3 @@
+pyodbc
+ipaddress
+sqlalchemy>=1.3

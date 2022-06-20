@@ -1655,7 +1655,7 @@ class TDSetup(Base):
 class TestProc(Base):
     __tablename__ = 'TestProc'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key=True, nullable=False, default=53)
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     Text = Column(Unicode(100))

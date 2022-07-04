@@ -1,13 +1,14 @@
 """
-Object Model for Spectrum Risk Database Version 1.3.2
+Object Model for Spectrum Risk Database Version 1.3.2 - 1.4.0
 """
 from enum import Enum
+from pydoc import doc
 
 import sqlalchemy
 from sqlalchemy import Boolean, Column, DateTime, Float, Identity, Index, Integer, LargeBinary, SmallInteger, Table, \
     Unicode, text, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.mssql import NTEXT
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, backref
 import datetime
 
 max_id_len = 20
@@ -17,26 +18,37 @@ metadata = Base.metadata
 
 
 class Acase(Base):
-    """Задание на расчёт последовательностей (Базовый класс)"""
+    """
+    Задание на расчёт последовательностей (Базовый класс)
+    """
     __tablename__ = 'Acase'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key=True, nullable=False, doc='Type of Acase')
+    """Internal representation of the object type (not recommended to set manually)"""
     __mapper_args__ = {"polymorphic_on": Type}
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     ResType = Column(SmallInteger)
     Mean = Column(Float(24))
     P05 = Column(Float(24))
+    """5th percentile"""
     P50 = Column(Float(24))
+    """50th percentile"""
     P95 = Column(Float(24))
+    """95th percentile"""
     TextRes = Column(SmallInteger)
     GERes = Column(SmallInteger)
     BERes = Column(SmallInteger)
     ExchRes = Column(SmallInteger)
     Unit = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -45,9 +57,13 @@ class Acase(Base):
     Flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
+acase_spec_overlap= 'MCSSetup, UncSetup, ImpSetup, TDSetup, FailureTreeAcases'
 
 class FailureTreeAcase(Acase):
     """
@@ -55,28 +71,201 @@ class FailureTreeAcase(Acase):
     """
     __mapper_args__ = {'polymorphic_identity': 31}
 
+    BCSets = relationship("BCSet", secondary="AcaseBC")
 
+    # Ссылка на спецификацию расчёта минимальных сечений
+    MCSSetup = relationship(
+        lambda: MCSSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (MCSSetup.Num == AcaseSpec.SetupNum) & (MCSSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию расчёта неопределённости
+    UncSetup = relationship(
+        lambda: UncSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (UncSetup.Num == AcaseSpec.SetupNum) & (UncSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию расчёта показателей значимости
+    ImpSetup = relationship(
+        lambda: ImpSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (ImpSetup.Num == AcaseSpec.SetupNum) & (ImpSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию Time Dep расчёта
+    TDSetup = relationship(
+        lambda: TDSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (TDSetup.Num == AcaseSpec.SetupNum) & (TDSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+    
 class SequenceAcase(Acase):
     """
     Задание на расчёт аварийныйх последовательностей
     """
     __mapper_args__ = {'polymorphic_identity': 32}
 
+    BCSets = relationship("BCSet", secondary="AcaseBC")
 
+    # Ссылка на спецификацию расчёта минимальных сечений
+    MCSSetup = relationship(
+        lambda: MCSSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (MCSSetup.Num == AcaseSpec.SetupNum) & (MCSSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию расчёта неопределённости
+    UncSetup = relationship(
+        lambda: UncSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (UncSetup.Num == AcaseSpec.SetupNum) & (UncSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию расчёта показателей значимости
+    ImpSetup = relationship(
+        lambda: ImpSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (ImpSetup.Num == AcaseSpec.SetupNum) & (ImpSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию Time Dep расчёта
+    TDSetup = relationship(
+        lambda: TDSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (TDSetup.Num == AcaseSpec.SetupNum) & (TDSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+    
 class ConsequenceAcase(Acase):
     """
     Задание на расчёт последствий деревьев событий
     """
     __mapper_args__ = {'polymorphic_identity': 33}
+    
+    EventTrees = relationship("EventTrees", secondary="AcaseET")
+    BCSets = relationship("BCSet", secondary="AcaseBC")
 
+    # Ссылка на спецификацию расчёта минимальных сечений
+    MCSSetup = relationship(
+        lambda: MCSSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (MCSSetup.Num == AcaseSpec.SetupNum) & (MCSSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
 
+    # Ссылка на спецификацию расчёта неопределённости
+    UncSetup = relationship(
+        lambda: UncSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (UncSetup.Num == AcaseSpec.SetupNum) & (UncSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию расчёта показателей значимости
+    ImpSetup = relationship(
+        lambda: ImpSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (ImpSetup.Num == AcaseSpec.SetupNum) & (ImpSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию Time Dep расчёта
+    TDSetup = relationship(
+        lambda: TDSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (TDSetup.Num == AcaseSpec.SetupNum) & (TDSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+    
 class MCSAcase(Acase):
     """
     A MCS Analysis Case can be used to merge the result (MCS lists) from other analysis cases
     """
     __mapper_args__ = {'polymorphic_identity': 34}
+    
+    # Ссылка на спецификацию расчёта минимальных сечений
+    MCSSetup = relationship(
+        lambda: MCSSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (MCSSetup.Num == AcaseSpec.SetupNum) & (MCSSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
 
+    # Ссылка на спецификацию расчёта неопределённости
+    UncSetup = relationship(
+        lambda: UncSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (UncSetup.Num == AcaseSpec.SetupNum) & (UncSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
 
+    # Ссылка на спецификацию расчёта показателей значимости
+    ImpSetup = relationship(
+        lambda: ImpSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (ImpSetup.Num == AcaseSpec.SetupNum) & (ImpSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию Time Dep расчёта
+    TDSetup = relationship(
+        lambda: TDSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (TDSetup.Num == AcaseSpec.SetupNum) & (TDSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+
+    # Ссылка на спецификацию постпроцессинга
+    MCSPPSetup = relationship(
+        lambda: MCSPPSetup,
+        secondary=lambda: AcaseSpec.__table__,
+        primaryjoin=lambda: (FailureTreeAcase.Num == AcaseSpec.AcaseNum) & (FailureTreeAcase.Type == AcaseSpec.AcaseType),
+        secondaryjoin=lambda: (MCSPPSetup.Num == AcaseSpec.SetupNum) & (MCSPPSetup.Type == AcaseSpec.SetupType),
+        uselist=False,
+        #backref=backref('FailureTreeAcases', uselist=True),
+        overlaps=acase_spec_overlap)
+    
 class GroupAcase(Acase):
     """
     Задание на расчёт группы вариантов анализа
@@ -86,7 +275,16 @@ class GroupAcase(Acase):
 
 class AcaseBC(Base):
     __tablename__ = 'AcaseBC'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['RecNum', 'RecType'],
+            ['Acase.Num', 'Acase.Type'],
+            name='fk_acase_entry'),
+        ForeignKeyConstraint(
+            ['BCType', 'BCNum'],
+            ['BCSet.Type', 'BCSet.Num'],
+            name='fk_bcset_entry'),
+    )
     RecType = Column(SmallInteger, primary_key=True, nullable=False)
     RecNum = Column(Integer, primary_key=True, nullable=False)
     BCType = Column(SmallInteger)
@@ -95,9 +293,20 @@ class AcaseBC(Base):
 
 
 class AcaseET(Base):
-    """Таблица связи Acase и ET"""
+    """
+    Таблица связи Acase и ET
+    """
     __tablename__ = 'AcaseET'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['AcaseNum', 'AcaseType'],
+            ['Acase.Num', 'Acase.Type'],
+            name='fk_acase_entry'),
+        ForeignKeyConstraint(
+            ['RecType', 'RecNum'],
+            ['ET.Type', 'ET.Num'],
+            name='fk_et_entry'),
+    )
     AcaseNum = Column(Integer, primary_key=True, nullable=False)
     RecType = Column(SmallInteger, primary_key=True, nullable=False)
     RecNum = Column(Integer, primary_key=True, nullable=False)
@@ -106,15 +315,31 @@ class AcaseET(Base):
 
 
 class AcaseSpec(Base):
+    """
+    Таблица связи Acase и Setup
+    """
     __tablename__ = 'AcaseSpec'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['AcaseNum', 'AcaseType'],
+            ['Acase.Num', 'Acase.Type'],
+            name='fk_acase_entry'),
+    )
+    
     AcaseNum = Column(Integer, primary_key=True, nullable=False)
     SetupType = Column(SmallInteger, primary_key=True, nullable=False)
+    #__mapper_args__ = {"polymorphic_on": SetupType}
     AcaseType = Column(SmallInteger)
     SetupNum = Column(Integer)
     DoAna = Column(SmallInteger)
     ResExist = Column(SmallInteger)
     flag = Column(Boolean)
+
+#class AcaseSpecFailureTree(AcaseSpec):
+#    """
+#    Задание на расчёт деревьев отказов
+#    """
+#    __mapper_args__ = {'polymorphic_identity': 31}
 
 
 class AttachmentRefs(Base):
@@ -134,11 +359,17 @@ class Attributes(Base):
     __tablename__ = 'Attrib'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False, default=22)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -147,8 +378,11 @@ class Attributes(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
     BasicEvents = relationship(
         lambda: BasicEvents,
@@ -160,8 +394,11 @@ class Attributes(Base):
 
 
 class BCHouse(Base):
+    """
+    Таблица связи границных условий и house event
+    """
     __tablename__ = 'BCHouse'
-
+    
     BCNum = Column(Integer, primary_key=True, nullable=False)
     RecType = Column(SmallInteger, primary_key=True, nullable=False)
     RecNum = Column(Integer, primary_key=True, nullable=False)
@@ -178,11 +415,17 @@ class BCSet(Base):
     __tablename__ = 'BCSet'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -191,8 +434,11 @@ class BCSet(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class BCSetAtt(Base):
@@ -213,6 +459,9 @@ t_BEBERelations = Table(
 
 
 class CCFEventPar(Base):
+    """
+    Таблица связи событий ООП и их параметров
+    """
     __tablename__ = 'CCFEventPar'
 
     IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
@@ -241,12 +490,19 @@ class CCFGroup(Base):
     """
     __tablename__ = 'CCFGroup'
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     CCFModel = Column(SmallInteger)
+    """Common cause failure model"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -256,8 +512,11 @@ class CCFGroup(Base):
     CCFAlpha8Bound = Column(Integer)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class CCFRec(Base):
@@ -281,6 +540,9 @@ class CCGBasic(Base):
 
 
 class CompEvent(Base):
+    """
+    Таблица связей компонентов - базисныйх событий
+    """
     __tablename__ = 'CompEvent'
     __table_args__ = (
         ForeignKeyConstraint(
@@ -309,11 +571,17 @@ class Components(Base):
     __tablename__ = 'Components'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False, default=24)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger, default=0)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -338,8 +606,11 @@ class Components(Base):
     # Systems = relationship(lambda: Systems, secondary=lambda: SysComp, back_populates = 'Components')
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class DistPoints(Base):
@@ -359,16 +630,25 @@ t_Duplicated = Table(
 
 
 class EventTrees(Base):
-    """Деревья событий """
+    """
+    Деревья событий
+    """
     __tablename__ = 'ET'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     Align = Column(SmallInteger)
+    """Align event tree top or center"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -377,11 +657,17 @@ class EventTrees(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class ETEvents(Base):
+    """
+    Таблица связи деревьев событий с событиями
+    """
     __tablename__ = 'ETEvents'
 
     ETNum = Column(Integer, primary_key=True, nullable=False)
@@ -399,14 +685,22 @@ class ETNodes(Base):
 
     ETNum = Column(Integer, primary_key=True, nullable=False)
     Num = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     FatherNum = Column(SmallInteger)
+    """Top node internal number"""
     HPos = Column(SmallInteger)
+    """Node position horizontally"""
     VPos = Column(SmallInteger)
+    """Node vertical position"""
     AltNum = Column(SmallInteger)
     flag = Column(Boolean)
 
 
 class ETSeq(Base):
+    """
+    Таблица связи деревьев событий с последовательностями
+    """
     __tablename__ = 'ET_Seq'
 
     ETNum = Column(Integer, primary_key=True, nullable=False)
@@ -417,6 +711,9 @@ class ETSeq(Base):
 
 
 class EventAtt(Base):
+    """
+    Таблица связи событий с атрибутами
+    """
     __tablename__ = 'EventAtt'
     __table_args__ = (
         ForeignKeyConstraint(
@@ -457,11 +754,17 @@ class EventGroup(Base):
     __tablename__ = 'EventGroup'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -470,11 +773,17 @@ class EventGroup(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class EventPar(Base):
+    """
+    Таблица связи событий с параметрами
+    """
     __tablename__ = 'EventPar'
 
     EventNum = Column(Integer, primary_key=True, nullable=False)
@@ -540,10 +849,15 @@ class Events(Base):
     __tablename__ = 'Events'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     __mapper_args__ = {"polymorphic_on": Type}
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     Symbol = Column(SmallInteger)
     Model = Column(SmallInteger)
@@ -552,6 +866,7 @@ class Events(Base):
     Mean = Column(Float(24))
     InitEnabl = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -562,8 +877,11 @@ class Events(Base):
     Nodes = relationship(lambda: FTNodes, back_populates='Event')
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class BasicEvents(Events):
@@ -611,7 +929,9 @@ class BasicEvents(Events):
 
 
 class Gates(Events):
-    """Гейты"""
+    """
+    Гейты
+    """
     __mapper_args__ = {'polymorphic_identity': 6}
 
     Attributes = relationship(
@@ -642,11 +962,14 @@ class ConsequenceEvents(Events):
     Sequence
     """
     __mapper_args__ = {'polymorphic_identity': 8}
-
+    
+    Sequences = relationship("Sequence", secondary="SeqCon")
 
 class TemplateEvents(Events):
     """
-        Собятия с фозможностью генерирования по шаблону
+        Собятия с возможностью генерирования по шаблону. Объекты, используя которые можно,
+        основываясь на построении имен по определенным правилам, присваивать некоторые
+        свойства целым группам базовых событий
     """
     __mapper_args__ = {'polymorphic_identity': 9}
     Attributes = relationship(
@@ -669,14 +992,27 @@ class FunctionEvents(Events):
 
 class CCFEvent(Events):
     """
-    CCF1
+    События сгенерированные на основе групп ООП
     """
     __mapper_args__ = {'polymorphic_identity': 12}
 
+    CCFParams = relationship(
+        lambda: Params,
+        secondary=lambda: CCFEventPar.__table__,
+        primaryjoin=lambda: (CCFEvent.Num == CCFEventPar.EventNum) & (CCFEvent.Type == CCFEventPar.EventType),
+        secondaryjoin=lambda: (Params.Num == CCFEventPar.ParNum) & (Params.Type ==CCFEventPar.ParType) & (Params.Type>40),
+        backref='CCFEvents')
+
+    CCFGroup = relationship(
+        lambda: CCFGroup,
+        secondary=lambda: CCFRec.__table__,
+        primaryjoin=lambda: (CCFEvent.Num == CCFRec.EventNum) & (CCFEvent.Type == CCFRec.EventType),
+        secondaryjoin=lambda: (CCFRec.CCGNum == CCFGroup.Num) & (CCFRec.CCGType == CCFGroup.Type),
+        backref="CCFEvents")
 
 class CCFGate(Events):
     """
-    CCF2
+    Гейты ООП
     """
     __mapper_args__ = {'polymorphic_identity': 21}
 
@@ -717,13 +1053,20 @@ class FaultTrees(Base):
     __tablename__ = 'FT'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     __mapper_args__ = {"polymorphic_on": Type}
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     Align = Column(SmallInteger)
+    """Align fault tree right or center"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -733,45 +1076,51 @@ class FaultTrees(Base):
     IsPositioned = Column(SmallInteger, server_default=text('((0))'))
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
-    """Ноды связанные с деревом (События, гейты, итд) """
     Nodes = relationship(lambda: FTNodes, back_populates='FaultTree')
+    """Ноды связанные с деревом (События, гейты, итд) """
 
-    """Топ(верхняя) гейт"""
     TopGate = relationship(Gates,
                            secondary=lambda: FTNodes.__table__,
                            primaryjoin=lambda: (FaultTrees.Num == FTNodes.FTNum) & (FTNodes.FatherGateNum == 0),
                            secondaryjoin=lambda: (FTNodes.RecNum == Gates.Num) & (FTNodes.RecType == Gates.Type),
                            uselist=False,
                            viewonly=True)
-    """Топ(верхняя) гейт"""
+    """Верхний гейт в дереве"""
+
     TopNode = relationship(lambda: FTNodes,
                            primaryjoin=lambda: (FaultTrees.Num == FTNodes.FTNum) & (
                                    FTNodes.FatherGateNum == 0 or FTNodes.InLevel == 0),
                            uselist=False,
                            viewonly=True)
+    """Верхняя нода в дереве"""
 
-    """Трансферные гейты """
     Transfers = relationship(lambda: Gates,
                              secondary=lambda: FTNodes.__table__,
                              primaryjoin=lambda: (FaultTrees.Num == FTNodes.FTNum) & (FTNodes.Transfer == -1),
                              secondaryjoin=lambda: FTNodes.RecNum == Gates.Num,
                              viewonly=True)
+    """Трансферные гейты """
 
     Gates = relationship(lambda: Gates,
                          secondary=lambda: FTNodes.__table__,
                          primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
                          secondaryjoin=lambda: FTNodes.RecNum == Gates.Num,
                          viewonly=True)
+    """Все гейты в дереве"""
+
 
     BasicEvents = relationship(lambda: BasicEvents,
                                secondary=lambda: FTNodes.__table__,
                                primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
                                secondaryjoin=lambda: FTNodes.RecNum == BasicEvents.Num,
                                viewonly=True)
-
+    """Все базисные события в дереве"""
 
 class CommonFailureTree(FaultTrees):
     """
@@ -828,14 +1177,23 @@ class FTNodes(Base):
 
 
 class FailMode(Base):
+    """
+    Таблица типов отказов
+    """
     __tablename__ = 'FailMode'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -844,8 +1202,11 @@ class FailMode(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class GroupSpec(Base):
@@ -866,10 +1227,15 @@ class ImpSetup(Base):
     """
     __tablename__ = 'ImpSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key=True, nullable=False, default=29)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
@@ -885,6 +1251,7 @@ class ImpSetup(Base):
     RefreshData = Column(SmallInteger)
     Extra = Column(Integer)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -893,14 +1260,19 @@ class ImpSetup(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class LockUnLockHistory(Base):
     __tablename__ = 'LockUnLockHistory'
 
     Num = Column(Integer, Identity(start=1, increment=1), primary_key=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     EditUid = Column(Integer)
     EditDate = Column(DateTime)
     LockStatus = Column(Boolean)
@@ -910,11 +1282,17 @@ class MCSPP(Base):
     __tablename__ = 'MCSPP'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -923,8 +1301,11 @@ class MCSPP(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class PPRuleTypeEnum(Enum):
@@ -936,6 +1317,9 @@ class PPRuleTypeEnum(Enum):
 
 
 class MCSPPRules(Base):
+    """
+    Таблица правил постпроцессинга минимальных сечений
+    """
     __tablename__ = 'MCSPPRules'
 
     IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
@@ -956,14 +1340,23 @@ class MCSPPRules(Base):
 
 
 class MCSPPSetup(Base):
+    """
+    Спецификация постпроцессинга минимальных сечений
+    """
     __tablename__ = 'MCSPPSetup'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -972,11 +1365,17 @@ class MCSPPSetup(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class MCSPPSetupAction(Base):
+    """
+    Таблица связи специйикации постпроцессинга и правил
+    """
     __tablename__ = 'MCSPPSetupAction'
 
     SetupNum = Column(Integer, primary_key=True, nullable=False)
@@ -998,10 +1397,15 @@ class MCSSetup(Base):
     """
     __tablename__ = 'MCSSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key=True, nullable=False, default=27)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
@@ -1026,6 +1430,7 @@ class MCSSetup(Base):
     RefreshData = Column(SmallInteger)
     Extra = Column(Integer)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1034,11 +1439,19 @@ class MCSSetup(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class MemoRefs(Base):
+    """
+    Таблица связи Memo с объектами модели. Допустимые объекты:  события, параметры, деревья отказов и событий,
+    последовательности, конечные состояния, задания на расчёт и поспроцесинг, процедуры тестирования, атрибуты,
+    типы отказов.
+    """
     __tablename__ = 'MemoRefs'
 
     MemoNum = Column(Integer, primary_key=True, nullable=False)
@@ -1056,12 +1469,18 @@ class Memo(Base):
     __tablename__ = 'Memo'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     Note = Column(NTEXT(1073741823))
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1070,14 +1489,18 @@ class Memo(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
     FaultTrees = relationship(FaultTrees,
                               secondary=MemoRefs.__table__,
                               primaryjoin=lambda: (Memo.Num == MemoRefs.MemoNum) & (Memo.Type == MemoRefs.MemoType),
                               secondaryjoin=(FaultTrees.Num == MemoRefs.RecNum) & (FaultTrees.Type == MemoRefs.RecType),
                               backref='Memos')
+
     """
     BasicEvents = relationship(BasicEvents,
                                secondary=MemoRefs.__table__,
@@ -1157,10 +1580,15 @@ class Params(Base):
     """
     __tablename__ = 'Params'
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     __mapper_args__ = {"polymorphic_on": Type}
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     Mean = Column(Float(24))
     DistType = Column(SmallInteger)
@@ -1169,10 +1597,14 @@ class Params(Base):
     DistPar3 = Column(Float(24))
     Unit = Column(SmallInteger)
     Median = Column(Float(24))
+    """50th percentile"""
     P05 = Column(Float(24))
+    """5th percentile"""
     P95 = Column(Float(24))
+    """95th percentile"""
     VarCoeff = Column(Float(24))
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1181,8 +1613,11 @@ class Params(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class ProbabilityParam(Params):
@@ -1335,15 +1770,19 @@ class Alpha8FactorParam(Params):
         "polymorphic_identity": 59
     }
 
+class ProjSettings(Base):
+    __tablename__ = 'ProjSettings'
 
-t_ProjSettings = Table(
-    'ProjSettings', metadata,
-    Column('Num', Integer, Identity(start=1, increment=1), nullable=False),
-    Column('Type', SmallInteger),
-    Column('ID', Unicode(40)),
-    Column('SettingValue', Unicode(40)),
-    Column('Tag', SmallInteger)
-)
+    Num = Column(Integer, Identity(start=1, increment=1), primary_key=True, nullable=False)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
+    Type = Column(SmallInteger, default=61)
+    """Internal representation of the object type (not recommended to set manually)"""
+    ID = Column(Unicode(40))
+    """Object text identifier"""
+    SettingValue = Column(Unicode(40))
+    """Parameter value"""
+    Tag = Column(SmallInteger)
 
 
 class Propagated(Base):
@@ -1354,11 +1793,16 @@ class Propagated(Base):
 
 
 class Properties(Base):
+    """
+    Параметры проекта, такие как: путь к модели, дата создания, размер итд.
+    """
     __tablename__ = 'Properties'
 
     Num = Column(SmallInteger, primary_key=True)
     Text = Column(Unicode(300))
+    """Text description"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1367,8 +1811,11 @@ class Properties(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class RepFields(Base):
@@ -1388,14 +1835,22 @@ class RepRel(Base):
 
 
 class Report(Base):
+    """
+    Таблица натройки отчётов
+    """
     __tablename__ = 'Report'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(40), primary_key=True, nullable=False)
+    """Object text identifier"""
     HeaderFirstPageOnly = Column(Boolean, nullable=False)
     FooterLastPageOnly = Column(Boolean, nullable=False)
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     DefaultValue = Column(SmallInteger)
     ReportType = Column(SmallInteger)
@@ -1442,6 +1897,7 @@ class Report(Base):
     NoFE = Column(SmallInteger)
     NoSequence = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1450,17 +1906,27 @@ class Report(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class SeqCon(Base):
+    """
+    Таблица связи последовательностей с конечными состояниями
+    """
     __tablename__ = 'SeqCon'
     __table_args__ = (
         ForeignKeyConstraint(
             ['EventNum', 'EventType'],
             ['Events.Num', 'Events.Type'],
-            name='fk_conseq_entry'),
+            name='fk_con_entry'),
+        ForeignKeyConstraint(
+            ['SeqNum'],
+            ['Sequence.Num'],
+            name='fk_seq_entry'),
     )
     SeqNum = Column(Integer, ForeignKey('Sequence.Num'), primary_key=True, nullable=False)
     EventNum = Column(Integer, primary_key=True, nullable=False)
@@ -1469,25 +1935,43 @@ class SeqCon(Base):
 
 
 class Sequence(Base):
+    """
+    Таблица последовательностей. Таблица автоматически генерируется RiskSpectrum`ом. Желательно только чтение
+    """
     __tablename__ = 'Sequence'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(255), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
     Mean = Column(Float(24))
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
-    EditUid = Column(Integer)
+    """Last modified date"""
+    EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
-    ReviewUid = Column(Integer)
+    ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
-    ApprovedUid = Column(Integer)
+    ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
+    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
+    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 class SysBC(Base):
+    """
+    Таблица связи системы с BC set (группой граничных условий)
+    """
     __tablename__ = 'SysBC'
 
     SysNum = Column(Integer, primary_key=True, nullable=False)
@@ -1551,6 +2035,9 @@ class SysGate(Base):
 
 
 class SysSubsys(Base):
+    """
+    Таблица связи системы с подсистемой
+    """
     __tablename__ = 'SysSubsys'
 
     SysNum = Column(Integer, ForeignKey('Systems.Num'), primary_key=True, nullable=False)
@@ -1559,6 +2046,9 @@ class SysSubsys(Base):
 
 
 class SysTestProc(Base):
+    """
+    Таблица связи процедуры тестирования с системой
+    """
     __tablename__ = 'SysTestProc'
 
     SysNum = Column(Integer, ForeignKey('Systems.Num'), primary_key=True, nullable=False)
@@ -1574,11 +2064,17 @@ class Systems(Base):
     __tablename__ = 'Systems'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False, default=23)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1591,6 +2087,7 @@ class Systems(Base):
                               primaryjoin=lambda: Systems.Num == SysSubsys.SysNum,
                               secondaryjoin=lambda: Systems.Num == SysSubsys.SubsysNum,
                               backref='ParentSystems')
+    """Subsystems (not working)"""
 
     Components = relationship(Components,
                               secondary=SysComp.__table__,
@@ -1622,17 +2119,28 @@ class Systems(Base):
                                   backref='Systems')
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class TDSetup(Base):
+    """
+    Спецификация time-dependent analysis. Неготовность учитывается как функций от времени
+    """
     __tablename__ = 'TDSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key=True, nullable=False, default=30)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     Time1 = Column(Float(24))
     Time2 = Column(Float(24))
@@ -1640,6 +2148,7 @@ class TDSetup(Base):
     RefreshData = Column(SmallInteger)
     Extra = Column(Integer)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1648,19 +2157,31 @@ class TDSetup(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class TestProc(Base):
+    """
+    A Test Procedure specifies a group of components tested together in a periodic test
+    """
     __tablename__ = 'TestProc'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False, default=53)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1669,25 +2190,41 @@ class TestProc(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class TestProcEvent(Base):
+    """
+    Вспомогательная таблица связи тест процедур и базисных событий
+    """
+
     __tablename__ = 'TestProc_Event'
 
+    """ Номер процедуры тестирования"""
     TestProcNum = Column(Integer, ForeignKey('TestProc.Num'), primary_key=True, nullable=False)
+    """ Номер базисного события"""
     EventNum = Column(Integer, ForeignKey('Events.Num'), primary_key=True, nullable=False)
+    """ Эффективность тестирования от 0 до 1. Соответствует вероятности выяления отказа """
     TestEff = Column(Float(24))
     flag = Column(Boolean)
 
 
 class TextMacro(Base):
+    """
+    Текстовые макросы, которые открываются по Ctrl-F2
+    """
     __tablename__ = 'TextMacro'
 
     Num = Column(SmallInteger, primary_key=True)
+    """ Текст макроса"""
     Text = Column(Unicode(100))
+    """Text description"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1696,8 +2233,11 @@ class TextMacro(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 class TopAcase(Base):
@@ -1717,10 +2257,15 @@ class UncSetup(Base):
     """
     __tablename__ = 'UncSetup'
 
-    Type = Column(SmallInteger, primary_key=True, nullable=False)
+    Type = Column(SmallInteger, primary_key=True, nullable=False, default = 28)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
@@ -1745,6 +2290,7 @@ class UncSetup(Base):
     RefreshData = Column(SmallInteger)
     Extra = Column(Integer)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1752,9 +2298,13 @@ class UncSetup(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    """The user approves the changes"""
 
 
 t_UncertaintyFiles = Table(
@@ -1775,15 +2325,22 @@ class Users(Base):
     __tablename__ = 'Users'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
+    """Internal representation of the object type (not recommended to set manually)"""
     Num = Column(Integer, Identity(start=1, increment=1), nullable=False, unique=True)
+    """Internal numeric representation of the object identifier
+    (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
+    """Object text identifier"""
     IsSecreteUser = Column(SmallInteger, nullable=False, server_default=text('((0))'))
     IsRemoved = Column(SmallInteger, nullable=False, server_default=text('((0))'))
     Password = Column(Unicode(20))
+    """User password"""
     Text = Column(Unicode(100))
+    """Text description"""
     Tag = Column(SmallInteger)
     UserRights = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
@@ -1792,8 +2349,11 @@ class Users(Base):
     flag = Column(Boolean)
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid], remote_side=[Num])
+    """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid], remote_side=[Num])
+    """The user who performed the check"""
     ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid], remote_side=[Num])
+    """The user approves the changes"""
 
 
 class Sysdiagrams(Base):

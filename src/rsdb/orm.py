@@ -399,7 +399,16 @@ class BCHouse(Base):
     Таблица связи границных условий и house event
     """
     __tablename__ = 'BCHouse'
-    
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['BCNum', 'BCType'],
+            ['BCSet.Num', 'BCSet.Type'],
+            name='fk_bcset_entry'),
+        ForeignKeyConstraint(
+            ['RecType', 'RecNum'],
+            ['Events.Type', 'Events.Num'],
+            name='fk_et_entry'),
+    )
     BCNum = Column(Integer, primary_key=True, nullable=False)
     RecType = Column(SmallInteger, primary_key=True, nullable=False)
     RecNum = Column(Integer, primary_key=True, nullable=False)
@@ -433,6 +442,8 @@ class BCSet(Base):
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
+
+    HouseEvents = relationship("HouseEvents", secondary="BCHouse")
 
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
     """The last user to edit the record"""
@@ -1195,12 +1206,14 @@ class FTNodes(Base):
     Neg = Column(SmallInteger, default=0)
     flag = Column(Boolean)
 
-    """Событие ноды"""
     Event = relationship(Events, back_populates='Nodes', uselist=False, lazy='select')
-    """Верхняя нода"""
+    """Событие ноды"""
     FatherNode = relationship(lambda: FTNodes, remote_side=[RecNum], backref='ChildNodes', lazy='select')
-    """Дерево отказов"""
+    """Верхняя нода"""
     FaultTree = relationship(FaultTrees, back_populates='Nodes', uselist=False, lazy='select')
+    """Дерево отказов"""
+
+    #Upper logical disjunction node
 
 
 class FailMode(Base):
@@ -2297,20 +2310,18 @@ class UncSetup(Base):
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
 
+    SimType = Column(SmallInteger)
     """ Тип семблирования 
         Parameter = 1
         Event = 2
     """
-    SimType = Column(SmallInteger)
-
-    """ Кол-во симуляций """
     NumSim = Column(Integer)
-
+    """ Кол-во симуляций """
+    RandType = Column(SmallInteger)
     """ Случайный или заданный в ручную seed
         Randomize = 1
         Manual = 2
     """
-    RandType = Column(SmallInteger)
     Seed = Column(SmallInteger)
     MCSCut = Column(Float(24))
     ImpCut = Column(Float(24))

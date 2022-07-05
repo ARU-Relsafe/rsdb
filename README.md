@@ -11,5 +11,23 @@ pip install rsdb
 
 ## Usage
 ```python
-# 1
+from rsdb.connection import Connector
+import rsdb.orm
+
+server = Connector(ip='<ip>', port=1433)
+# Show available models
+print(server.GetAvailableModels())
+# Get SqlAlchemy session factory
+Session = server.GetModelSession('<model_name>')
+
+with Session() as session:
+    event_trees = session.execute(select(rsdb.orm EventTrees)).scalars().all()
+        for et in event_trees:
+            print(et.ID)
+            func_events = et.FunctionEvents
+            for event in func_events:
+                print(f'\t fe:{e.ID}')
+
+            initiating_event = et.InitiatingEvent
+            print(f'\t ie:{ie.ID}')
 ```

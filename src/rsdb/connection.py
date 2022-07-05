@@ -2,7 +2,13 @@ import sys
 import os
 import pyodbc
 import ipaddress
-import sqlalchemy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from urllib.parse import quote_plus
+from collections.abc import Iterable
+from typing import Union
+
 
 class Connector:
     """
@@ -16,11 +22,11 @@ class Connector:
     _driver: str
 
     def __init__(self,
-                 server_name='.\RISKSPEC_PSA2012',
-                 uid='sa',
-                 pwd='82sbDiF%5_2&33d%hvTP!4',
-                 ip='127.0.0.1',
-                 port=1433):
+                 ip: str = '127.0.0.1',
+                 port: int = 1433,
+                 server_name: str = '.\RISKSPEC_PSA2012',
+                 uid: str = 'sa',
+                 pwd: str = '82sbDiF%5_2&33d%hvTP!4'):
         """Setting parameters for connecting to the SQL server"""
 
         if len(server_name) < 0:
@@ -56,7 +62,7 @@ class Connector:
             print(f'pyodbc error: {ex.args[0]}', file=sys.stderr)
         return self.GetConnectString(dbname)
 
-    def DetachModel(self, model_name: str):
+    def DetachModel(self, model_name: Union[str, Iterable[str]]):
         if isinstance(model_name, str):
             params = self.GetConnectString('master')
             try:
@@ -91,7 +97,7 @@ class Connector:
             except pyodbc.Error as ex:
                 print(f'pyodbc error: {ex.args[0]}', file=sys.stderr)
 
-    def GetAvailableModels(self) -> list:
+    def GetAvailableModels(self, name_only: bool = True) -> list:
         """
         Get a list of all active models on the SQL server
         """
@@ -106,7 +112,10 @@ class Connector:
                         ''')
                     rows = cursor.fetchall()
                     if len(rows) > 0:
-                        return [r[0] for r in rows]
+                        if name_only:
+                            return [r[0] for r in rows]
+                        else:
+                            return rows
         except pyodbc.Error as ex:
             print(f'pyodbc error: {ex.args[0]}', file=sys.stderr)
 
@@ -124,7 +133,6 @@ class Connector:
         else:
             raise Exception('OS not supported')
 
-
     def GetCMDConnectString(self, model_name: str) -> str:
         """
         Get model connection string for console call
@@ -135,38 +143,20 @@ class Connector:
             return f'mssql+pyodbc://{self._uid}:{self._pwd}@{self._server_name}/{model_name}?driver=SQL+Server+Native+Client+11.0'
         else:
             raise Exception('OS not supported')
-    
-    def GetSession(self):
+
+    def GetModelSession(self, model_name: str):
         """
         Get SqlAlchemy session
         """
-        pass
+        params = quote_plus(
+            f'DRIVER=FreeTDS;SERVER={self._ip};PORT={self._port};DATABASE={model_name};UID={self._uid};Pwd={self._pwd};TDS_Version=8.0;')
+        engine = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params)
 
-
-def test():
-    constr = Connector()
-    constr.ConnectToServer(pwd='AsdfAsdf132009828')
-    print(constr.GetConnectString('master'))
-    try:
-        with pyodbc.connect(constr.GetConnectString('master')) as cnxn:
-            with cnxn.cursor() as cursor:
-                rows = cursor.execute('SELECT @@version;')
-                for row in rows:
-                    print(row)
-    except pyodbc.Error as ex:
-        print(f'pyodbc error: {ex.args[0]}', file=sys.stderr)
-
-
-    print(constr.GetCMDConnectString('master'))
-    with sqlalchemy.create_engine(constr.GetCMDConnectString('master')) as engine:
-        with engine.connect() as connection:
-            rows = connection.execute("select @@version")
-            for row in rows:
-                print(row)
+        Base = declarative_base(engine)
+        metadata = Base.metadata
+        Session = sessionmaker(bind=engine, future=True)
+        return Session
 
 
 if __name__ == "__main__":
-    from orm import Acase,  Attributes
-    a = Attributes()
-    a.
-    test()
+    print('Модуль не может быть запущен')

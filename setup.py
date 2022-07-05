@@ -16,7 +16,7 @@ setup(
     description='Object–relational mapping for RiskSpectrum PSA model database',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='0.9.0',
+    version='0.9.1',
     author='Kravchenko Vladimir S',
     author_email='kvover@gmail.com',
     classifiers=[

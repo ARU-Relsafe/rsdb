@@ -12,6 +12,7 @@ from sqlalchemy.orm import declarative_base, relationship, backref
 import datetime
 
 max_id_len = 20
+max_decs_len = 100
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -31,7 +32,7 @@ class Acase(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     ResType = Column(SmallInteger)
@@ -365,7 +366,7 @@ class Attributes(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -421,7 +422,7 @@ class BCSet(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -496,7 +497,7 @@ class CCFGroup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     CCFModel = Column(SmallInteger)
@@ -577,7 +578,7 @@ class Components(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger, default=0)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -642,7 +643,7 @@ class EventTrees(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     Align = Column(SmallInteger)
@@ -656,6 +657,13 @@ class EventTrees(Base):
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
+    FunctionEvents = relationship("FunctionEvents", secondary="ETEvents")
+    """Функциональные события"""
+    InitiatingEvent = relationship("InitiatingEvent", secondary="ETEvents", uselist=False)
+    """Исзодное событие"""
+    
+    Sequences = relationship("Sequence", secondary="ET_Seq", viewonly=True)
+    
     EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
     """The last user to edit the record"""
     ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
@@ -670,6 +678,16 @@ class ETEvents(Base):
     """
     __tablename__ = 'ETEvents'
 
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['ETNum'],
+            ['ET.Num'],
+            name='fk_et_entry'),
+        ForeignKeyConstraint(
+            ['EventType', 'EventNum'],
+            ['Events.Type', 'Events.Num'],
+            name='fk_event_entry'),
+    )
     ETNum = Column(Integer, primary_key=True, nullable=False)
     Pos = Column(SmallInteger, primary_key=True, nullable=False)
     EventType = Column(SmallInteger)
@@ -702,7 +720,16 @@ class ETSeq(Base):
     Таблица связи деревьев событий с последовательностями
     """
     __tablename__ = 'ET_Seq'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['ETNum'],
+            ['ET.Num'],
+            name='fk_et_entry'),
+        ForeignKeyConstraint(
+            ['SeqNum'],
+            ['Sequence.Num'],
+            name='fk_seq_entry'),
+    )
     ETNum = Column(Integer, primary_key=True, nullable=False)
     SeqPos = Column(SmallInteger, primary_key=True, nullable=False)
     SeqNum = Column(Integer)
@@ -760,7 +787,7 @@ class EventGroup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -856,7 +883,7 @@ class Events(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     Symbol = Column(SmallInteger)
@@ -1060,7 +1087,7 @@ class FaultTrees(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     Align = Column(SmallInteger)
@@ -1189,7 +1216,7 @@ class FailMode(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -1234,7 +1261,7 @@ class ImpSetup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -1288,7 +1315,7 @@ class MCSPP(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -1352,7 +1379,7 @@ class MCSPPSetup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -1404,7 +1431,7 @@ class MCSSetup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -1475,7 +1502,7 @@ class Memo(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     Note = Column(NTEXT(1073741823))
@@ -1587,7 +1614,7 @@ class Params(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     Mean = Column(Float(24))
@@ -1849,7 +1876,7 @@ class Report(Base):
     """Object text identifier"""
     HeaderFirstPageOnly = Column(Boolean, nullable=False)
     FooterLastPageOnly = Column(Boolean, nullable=False)
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     DefaultValue = Column(SmallInteger)
@@ -1947,7 +1974,7 @@ class Sequence(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(255), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -2070,7 +2097,7 @@ class Systems(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -2139,7 +2166,7 @@ class TDSetup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     Time1 = Column(Float(24))
@@ -2177,7 +2204,7 @@ class TestProc(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -2221,7 +2248,7 @@ class TextMacro(Base):
 
     Num = Column(SmallInteger, primary_key=True)
     """ Текст макроса"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
@@ -2264,7 +2291,7 @@ class UncSetup(Base):
     (it is not recommended to set it manually)"""
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     CalcType = Column(SmallInteger)
@@ -2335,7 +2362,7 @@ class Users(Base):
     IsRemoved = Column(SmallInteger, nullable=False, server_default=text('((0))'))
     Password = Column(Unicode(20))
     """User password"""
-    Text = Column(Unicode(100))
+    Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
     UserRights = Column(SmallInteger)

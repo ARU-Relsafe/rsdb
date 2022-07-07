@@ -35,8 +35,10 @@ class Acase(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     ResType = Column(SmallInteger)
     Mean = Column(Float(24))
+    """The result of the calculation of the mean"""
     P05 = Column(Float(24))
     """5th percentile"""
     P50 = Column(Float(24))
@@ -44,6 +46,7 @@ class Acase(Base):
     P95 = Column(Float(24))
     """95th percentile"""
     TextRes = Column(SmallInteger)
+    """Specifies whether to save results as text"""
     GERes = Column(SmallInteger)
     BERes = Column(SmallInteger)
     ExchRes = Column(SmallInteger)
@@ -51,17 +54,18 @@ class Acase(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     Flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 acase_spec_overlap= 'MCSSetup, UncSetup, ImpSetup, TDSetup, FailureTreeAcases'
@@ -73,6 +77,7 @@ class FailureTreeAcase(Acase):
     __mapper_args__ = {'polymorphic_identity': 31}
 
     BCSets = relationship("BCSet", secondary="AcaseBC")
+    """List of boundary condition sets for calculation"""
 
     # Ссылка на спецификацию расчёта минимальных сечений
     MCSSetup = relationship(
@@ -121,6 +126,7 @@ class SequenceAcase(Acase):
     __mapper_args__ = {'polymorphic_identity': 32}
 
     BCSets = relationship("BCSet", secondary="AcaseBC")
+    """List of boundary condition sets for calculation"""
 
     # Ссылка на спецификацию расчёта минимальных сечений
     MCSSetup = relationship(
@@ -168,8 +174,10 @@ class ConsequenceAcase(Acase):
     """
     __mapper_args__ = {'polymorphic_identity': 33}
     
-    EventTrees = relationship("EventTrees", secondary="AcaseET")
+    EventTrees = relationship("EventTree", secondary="AcaseET")
+    """List of event trees for calculation"""
     BCSets = relationship("BCSet", secondary="AcaseBC")
+    """List of boundary condition sets for calculation"""
 
     # Ссылка на спецификацию расчёта минимальных сечений
     MCSSetup = relationship(
@@ -343,7 +351,7 @@ class AcaseSpec(Base):
 #    __mapper_args__ = {'polymorphic_identity': 31}
 
 
-class AttachmentRefs(Base):
+class AttachmentRef(Base):
     __tablename__ = 'AttachmentRefs'
 
     IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True, nullable=False)
@@ -352,7 +360,7 @@ class AttachmentRefs(Base):
     Attachment = Column(Unicode(4000))
 
 
-class Attributes(Base):
+class Attribute(Base):
     """
     Объекты, при помощи которых можно анализировать влияние различных групп базовых событий на конечный результат
     квантификации. Каждому базовому событию можно присвоить несколько атрибутов
@@ -369,30 +377,32 @@ class Attributes(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
     BasicEvents = relationship(
-        lambda: BasicEvents,
+        lambda: BasicEvent,
         secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: (Attributes.Num == EventAtt.AttNum) & (Attributes.Type == EventAtt.AttType),
-        secondaryjoin=lambda: (BasicEvents.Num == EventAtt.EventNum) and (BasicEvents.Type == EventAtt.EventType),
+        primaryjoin=lambda: (Attribute.Num == EventAtt.AttNum) & (Attribute.Type == EventAtt.AttType),
+        secondaryjoin=lambda: (BasicEvent.Num == EventAtt.EventNum) and (BasicEvent.Type == EventAtt.EventType),
         back_populates='Attributes',
         collection_class=set)
-
+    """Basic events included in the attribute"""
 
 class BCHouse(Base):
     """
@@ -434,22 +444,25 @@ class BCSet(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    HouseEvents = relationship("HouseEvents", secondary="BCHouse")
+    HouseEvents = relationship("HouseEvent", secondary="BCHouse")
+    """House events included in the BCset"""
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -511,11 +524,13 @@ class CCFGroup(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     CCFModel = Column(SmallInteger)
     """Common cause failure model"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
@@ -523,11 +538,11 @@ class CCFGroup(Base):
     flag = Column(Boolean)
     CCFAlpha8Bound = Column(Integer)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -575,7 +590,7 @@ class CompEvent(Base):
     flag = Column(Boolean)
 
 
-class Components(Base):
+class Component(Base):
     """
     Компоненты
     Объекты, объединяющие несколько базовых событий, относящихся к одной единице оборудования
@@ -592,9 +607,11 @@ class Components(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger, default=0)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
@@ -602,26 +619,28 @@ class Components(Base):
     flag = Column(Boolean)
 
     BasicEvents = relationship(
-        lambda: BasicEvents,
+        lambda: BasicEvent,
         secondary=lambda: CompEvent.__table__,
-        primaryjoin=lambda: (Components.Num == CompEvent.RecNum1) & (Components.Type == CompEvent.RecType1),
-        secondaryjoin=lambda: (BasicEvents.Num == CompEvent.RecNum2) & (BasicEvents.Type == CompEvent.RecType2),
+        primaryjoin=lambda: (Component.Num == CompEvent.RecNum1) & (Component.Type == CompEvent.RecType1),
+        secondaryjoin=lambda: (BasicEvent.Num == CompEvent.RecNum2) & (BasicEvent.Type == CompEvent.RecType2),
         back_populates='Components')
+    """House events included in the component"""
 
     Systems = relationship(
-        lambda: Systems,
+        lambda: System,
         secondary=lambda: SysComp.__table__,
-        primaryjoin=lambda: (Components.Num == SysComp.RecNum2) & (Components.Type == SysComp.RecType2),
-        secondaryjoin=lambda: (Systems.Num == SysComp.RecNum1) & (Systems.Type == SysComp.RecType1),
+        primaryjoin=lambda: (Component.Num == SysComp.RecNum2) & (Component.Type == SysComp.RecType2),
+        secondaryjoin=lambda: (System.Num == SysComp.RecNum1) & (System.Type == SysComp.RecType1),
         back_populates='Components')
+    """Systems that includes this component"""
+    
+    # Systems = relationship(lambda: System, secondary=lambda: SysComp, back_populates = 'Components')
 
-    # Systems = relationship(lambda: Systems, secondary=lambda: SysComp, back_populates = 'Components')
-
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -641,7 +660,7 @@ t_Duplicated = Table(
 )
 
 
-class EventTrees(Base):
+class EventTree(Base):
     """
     Деревья событий
     """
@@ -657,29 +676,33 @@ class EventTrees(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     Align = Column(SmallInteger)
     """Align event tree top or center"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    FunctionEvents = relationship("FunctionEvents", secondary="ETEvents")
+    FunctionEvents = relationship("FunctionEvent", secondary="ETEvents")
     """Функциональные события"""
     InitiatingEvent = relationship("InitiatingEvent", secondary="ETEvents", uselist=False)
     """Исзодное событие"""
-    
     Sequences = relationship("Sequence", secondary="ET_Seq", viewonly=True)
+    """Перечень аварийных последовательностей"""
     
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    #ConsequenceEvent = relationship("Sequence", secondary="ET_Seq", viewonly=True)
+    
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -706,12 +729,17 @@ class ETEvents(Base):
     flag = Column(Boolean)
 
 
-class ETNodes(Base):
+class ETNode(Base):
     """
      Ноды образуют граф взаимосвязей между функциональными событиями в дереве событий
     """
     __tablename__ = 'ETNodes'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['ETNum'],
+            ['ET.Num'],
+            name='fk_et_entry'),
+    )
     ETNum = Column(Integer, primary_key=True, nullable=False)
     Num = Column(SmallInteger, primary_key=True, nullable=False)
     """Internal numeric representation of the object identifier
@@ -770,18 +798,26 @@ class EventAtt(Base):
     AttType = Column(SmallInteger, default=22)
     flag = Column(Boolean)
 
-
-t_EventExch = Table(
-    'EventExch', metadata,
-    Column('EventType', SmallInteger),
-    Column('EventNum', Integer, nullable=False),
-    Column('CondType', SmallInteger),
-    Column('CondNum', Integer),
-    Column('ExchType', SmallInteger),
-    Column('ExchNum', Integer),
-    Column('flag', Boolean),
-    Index('IX_EventExch', 'EventNum', 'CondNum', unique=True)
-)
+class EventExch(Base):
+    __tablename__ = 'EventExch'
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['EventNum', 'EventType'],
+            ['Events.Num', 'Events.Type'],
+            name='fk_events_entry'),
+        ForeignKeyConstraint(
+            ['ExchNum', 'ExchType'],
+            ['Events.Num', 'Events.Type'],
+            name='fk_exch_entry'),
+    )
+    
+    EventType = Column(SmallInteger)
+    EventNum = Column(Integer, primary_key=True, nullable=False)
+    CondType = Column(SmallInteger)
+    CondNum = Column(Integer, primary_key=True)
+    ExchType = Column(SmallInteger)
+    ExchNum = Column(Integer)
+    flag = Column(Boolean)
 
 
 class EventGroup(Base):
@@ -801,20 +837,22 @@ class EventGroup(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -879,7 +917,7 @@ class InitEnamlEnum(Enum):
     Both = 2
 
 
-class Events(Base):
+class Event(Base):
     """
     События
     Таблица хранит перечень всех событий в моделе, см. типы событий
@@ -897,6 +935,7 @@ class Events(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     Symbol = Column(SmallInteger)
     Model = Column(SmallInteger)
     State = Column(SmallInteger)
@@ -906,54 +945,55 @@ class Events(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    Nodes = relationship(lambda: FTNodes, back_populates='Event')
+    Nodes = relationship(lambda: FTNode, back_populates='Event')
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
-class BasicEvents(Events):
+class BasicEvent(Event):
     """
     Базисное событие
     """
     __mapper_args__ = {'polymorphic_identity': 5}
 
     Components = relationship(
-        lambda: Components,
+        lambda: Component,
         secondary=lambda: CompEvent.__table__,
-        primaryjoin=lambda: (BasicEvents.Num == CompEvent.RecNum2) & (BasicEvents.Type == CompEvent.RecType2),
-        secondaryjoin=lambda: (Components.Num == CompEvent.RecNum1) & (Components.Type == CompEvent.RecType1),
+        primaryjoin=lambda: (BasicEvent.Num == CompEvent.RecNum2) & (BasicEvent.Type == CompEvent.RecType2),
+        secondaryjoin=lambda: (Component.Num == CompEvent.RecNum1) & (Component.Type == CompEvent.RecType1),
         back_populates='BasicEvents')
 
     Attributes = relationship(
-        lambda: Attributes,
+        lambda: Attribute,
         secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: (BasicEvents.Num == EventAtt.EventNum) & (BasicEvents.Type == EventAtt.EventType),
-        secondaryjoin=lambda: (Attributes.Num == EventAtt.AttNum) & (Attributes.Type == EventAtt.AttType),
+        primaryjoin=lambda: (BasicEvent.Num == EventAtt.EventNum) & (BasicEvent.Type == EventAtt.EventType),
+        secondaryjoin=lambda: (Attribute.Num == EventAtt.AttNum) & (Attribute.Type == EventAtt.AttType),
         back_populates='BasicEvents',
         collection_class=set)
 
     Params = relationship(
-        lambda: Params,
+        lambda: Param,
         secondary=lambda: EventPar.__table__,
-        primaryjoin=lambda: (Events.Num == EventPar.EventNum) & (Events.Type == EventPar.EventType),
-        secondaryjoin=lambda: (Params.Num == EventPar.ParNum) & (Params.Type == EventPar.ParType),
+        primaryjoin=lambda: (Event.Num == EventPar.EventNum) & (Event.Type == EventPar.EventType),
+        secondaryjoin=lambda: (Param.Num == EventPar.ParNum) & (Param.Type == EventPar.ParType),
         backref='BasicEvents')
 
     CCFGroup = relationship(
         lambda: CCFGroup,
         secondary=lambda: CCGBasic.__table__,
-        primaryjoin=lambda: (BasicEvents.Num == CCGBasic.EventNum) & (BasicEvents.Type == CCGBasic.EventType),
+        primaryjoin=lambda: (BasicEvent.Num == CCGBasic.EventNum) & (BasicEvent.Type == CCGBasic.EventType),
         secondaryjoin=lambda: (CCGBasic.CCGNum == CCFGroup.Num) & (CCGBasic.CCGType == CCFGroup.Type),
         uselist=False,
         backref="BasicEvents")
@@ -961,26 +1001,26 @@ class BasicEvents(Events):
     TestProcedures = relationship(
         lambda: TestProc,
         secondary=lambda: TestProcEvent.__table__,
-        primaryjoin=lambda: BasicEvents.Num == TestProcEvent.EventNum,
+        primaryjoin=lambda: BasicEvent.Num == TestProcEvent.EventNum,
         secondaryjoin=lambda: TestProc.Num == TestProcEvent.TestProcNum,
         backref='BasicEvents')
 
 
-class Gates(Events):
+class Gate(Event):
     """
     Гейты
     """
     __mapper_args__ = {'polymorphic_identity': 6}
 
     Attributes = relationship(
-        lambda: Attributes,
+        lambda: Attribute,
         secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: (Gates.Num == EventAtt.EventNum) & (Gates.Type == EventAtt.EventType),
-        secondaryjoin=lambda: (Attributes.Num == EventAtt.AttNum) & (Attributes.Type == EventAtt.AttType),
+        primaryjoin=lambda: (Gate.Num == EventAtt.EventNum) & (Gate.Type == EventAtt.EventType),
+        secondaryjoin=lambda: (Attribute.Num == EventAtt.AttNum) & (Attribute.Type == EventAtt.AttType),
         backref='Events')
 
 
-class HouseEvents(Events):
+class HouseEvent(Event):
     """
     House events
     Постулируемые базисные события
@@ -988,22 +1028,22 @@ class HouseEvents(Events):
     __mapper_args__ = {'polymorphic_identity': 7}
 
     Attributes = relationship(
-        lambda: Attributes,
+        lambda: Attribute,
         secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: (HouseEvents.Num == EventAtt.EventNum) & (HouseEvents.Type == EventAtt.EventType),
-        secondaryjoin=lambda: (Attributes.Num == EventAtt.AttNum) & (Attributes.Type == EventAtt.AttType),
+        primaryjoin=lambda: (HouseEvent.Num == EventAtt.EventNum) & (HouseEvent.Type == EventAtt.EventType),
+        secondaryjoin=lambda: (Attribute.Num == EventAtt.AttNum) & (Attribute.Type == EventAtt.AttType),
         backref='HouseEvents')
 
 
-class ConsequenceEvents(Events):
+class ConsequenceEvent(Event):
     """
     Sequence
     """
     __mapper_args__ = {'polymorphic_identity': 8}
     
-    Sequences = relationship("Sequence", secondary="SeqCon")
+    #Sequences = relationship("Sequence", secondary="SeqCon")
 
-class TemplateEvents(Events):
+class TemplateEvent(Event):
     """
         Собятия с возможностью генерирования по шаблону. Объекты, используя которые можно,
         основываясь на построении имен по определенным правилам, присваивать некоторые
@@ -1011,34 +1051,49 @@ class TemplateEvents(Events):
     """
     __mapper_args__ = {'polymorphic_identity': 9}
     Attributes = relationship(
-        lambda: Attributes,
+        lambda: Attribute,
         secondary=lambda: EventAtt.__table__,
-        primaryjoin=lambda: (TemplateEvents.Num == EventAtt.EventNum) & (TemplateEvents.Type == EventAtt.EventType),
-        secondaryjoin=lambda: (Attributes.Num == EventAtt.AttNum) & (Attributes.Type == EventAtt.AttType),
+        primaryjoin=lambda: (TemplateEvent.Num == EventAtt.EventNum) & (TemplateEvent.Type == EventAtt.EventType),
+        secondaryjoin=lambda: (Attribute.Num == EventAtt.AttNum) & (Attribute.Type == EventAtt.AttType),
         backref='TemplateEvents')
 
 
-class InitiatingEvent(Events):
+class InitiatingEvent(Event):
     """Исхожные события (в дереве событий)"""
     __mapper_args__ = {'polymorphic_identity': 10}
+    
 
 
-class FunctionEvents(Events):
+class FunctionEvent(Event):
     """Функциональные события (в дереве событий)"""
     __mapper_args__ = {'polymorphic_identity': 11}
 
+#     BasicEvents = relationship(
+#         "BasicEvent",
+#         secondary="FEInputs",
+#         foreign_keys=[FunctionEventInput.fk_event_entry])
 
-class CCFEvent(Events):
+#     Gates = relationship(
+#         "Gates",
+#         secondary="FEInputs",
+#         foreign_keys=[FunctionEventInput.fk_input_entry])
+
+#     BCSets = relationship(
+#         "BCSet",
+#         secondary="FEInputs",
+#        foreign_keys=[FunctionEventInput.fk_bcset_entry])
+    
+class CCFEvent(Event):
     """
     События сгенерированные на основе групп ООП
     """
     __mapper_args__ = {'polymorphic_identity': 12}
 
     CCFParams = relationship(
-        lambda: Params,
+        lambda: Param,
         secondary=lambda: CCFEventPar.__table__,
         primaryjoin=lambda: (CCFEvent.Num == CCFEventPar.EventNum) & (CCFEvent.Type == CCFEventPar.EventType),
-        secondaryjoin=lambda: (Params.Num == CCFEventPar.ParNum) & (Params.Type ==CCFEventPar.ParType) & (Params.Type>40),
+        secondaryjoin=lambda: (Param.Num == CCFEventPar.ParNum) & (Param.Type ==CCFEventPar.ParType) & (Param.Type>40),
         backref='CCFEvents')
 
     CCFGroup = relationship(
@@ -1048,7 +1103,7 @@ class CCFEvent(Events):
         secondaryjoin=lambda: (CCFRec.CCGNum == CCFGroup.Num) & (CCFRec.CCGType == CCFGroup.Type),
         backref="CCFEvents")
 
-class CCFGate(Events):
+class CCFGate(Event):
     """
     Гейты ООП
     """
@@ -1065,13 +1120,26 @@ class FEGroup(Base):
     flag = Column(Boolean)
 
 
-class FunctionEventInputs(Base):
+class FunctionEventInput(Base):
     """
     Таблица для связи между функциональными/исходными событиями и их воходными данными в виде последствий,
     бахзисных событий и гейтов
     """
     __tablename__ = 'FEInputs'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['FENum', 'FEType'],
+            ['Events.Num', 'Events.Type'],
+            name='fk_event_entry'),
+        ForeignKeyConstraint(
+            ['InputNum', 'InputType'],
+            ['Events.Num', 'Events.Type'],
+            name='fk_input_entry'),
+        ForeignKeyConstraint(
+            ['BCNum'],
+            ['BCSet.Num'],
+            name='fk_bcset_entry'),
+    )
     AltNum = Column(Integer, primary_key=True, nullable=False)
     FEType = Column(SmallInteger, nullable=False)
     FENum = Column(Integer, primary_key=True, nullable=False)
@@ -1086,7 +1154,7 @@ class TagEnum(Enum):
     Not = 0
 
 
-class FaultTrees(Base):
+class FaultTree(Base):
     """ Дерево отказов """
     __tablename__ = 'FT'
 
@@ -1101,11 +1169,13 @@ class FaultTrees(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     Align = Column(SmallInteger)
     """Align fault tree right or center"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
@@ -1113,61 +1183,61 @@ class FaultTrees(Base):
     flag = Column(Boolean)
     IsPositioned = Column(SmallInteger, server_default=text('((0))'))
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
-    Nodes = relationship(lambda: FTNodes, back_populates='FaultTree')
+    Nodes = relationship(lambda: FTNode, back_populates='FaultTree')
     """Ноды связанные с деревом (События, гейты, итд) """
 
-    TopGate = relationship(Gates,
-                           secondary=lambda: FTNodes.__table__,
-                           primaryjoin=lambda: (FaultTrees.Num == FTNodes.FTNum) & (FTNodes.FatherGateNum == 0),
-                           secondaryjoin=lambda: (FTNodes.RecNum == Gates.Num) & (FTNodes.RecType == Gates.Type),
+    TopGate = relationship(Gate,
+                           secondary=lambda: FTNode.__table__,
+                           primaryjoin=lambda: (FaultTree.Num == FTNode.FTNum) & (FTNode.FatherGateNum == 0),
+                           secondaryjoin=lambda: (FTNode.RecNum == Gate.Num) & (FTNode.RecType == Gate.Type),
                            uselist=False,
                            viewonly=True)
     """Верхний гейт в дереве"""
 
-    TopNode = relationship(lambda: FTNodes,
-                           primaryjoin=lambda: (FaultTrees.Num == FTNodes.FTNum) & (
-                                   FTNodes.FatherGateNum == 0 or FTNodes.InLevel == 0),
+    TopNode = relationship(lambda: FTNode,
+                           primaryjoin=lambda: (FaultTree.Num == FTNode.FTNum) & (
+                                   FTNode.FatherGateNum == 0 or FTNode.InLevel == 0),
                            uselist=False,
                            viewonly=True)
     """Верхняя нода в дереве"""
 
-    Transfers = relationship(lambda: Gates,
-                             secondary=lambda: FTNodes.__table__,
-                             primaryjoin=lambda: (FaultTrees.Num == FTNodes.FTNum) & (FTNodes.Transfer == -1),
-                             secondaryjoin=lambda: FTNodes.RecNum == Gates.Num,
+    Transfers = relationship(lambda: Gate,
+                             secondary=lambda: FTNode.__table__,
+                             primaryjoin=lambda: (FaultTree.Num == FTNode.FTNum) & (FTNode.Transfer == -1),
+                             secondaryjoin=lambda: FTNode.RecNum == Gate.Num,
                              viewonly=True)
     """Трансферные гейты """
 
-    Gates = relationship(lambda: Gates,
-                         secondary=lambda: FTNodes.__table__,
-                         primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
-                         secondaryjoin=lambda: FTNodes.RecNum == Gates.Num,
+    Gates = relationship(lambda: Gate,
+                         secondary=lambda: FTNode.__table__,
+                         primaryjoin=lambda: FaultTree.Num == FTNode.FTNum,
+                         secondaryjoin=lambda: FTNode.RecNum == Gate.Num,
                          viewonly=True)
     """Все гейты в дереве"""
 
 
-    BasicEvents = relationship(lambda: BasicEvents,
-                               secondary=lambda: FTNodes.__table__,
-                               primaryjoin=lambda: FaultTrees.Num == FTNodes.FTNum,
-                               secondaryjoin=lambda: FTNodes.RecNum == BasicEvents.Num,
+    BasicEvents = relationship(lambda: BasicEvent,
+                               secondary=lambda: FTNode.__table__,
+                               primaryjoin=lambda: FaultTree.Num == FTNode.FTNum,
+                               secondaryjoin=lambda: FTNode.RecNum == BasicEvent.Num,
                                viewonly=True)
     """Все базисные события в дереве"""
 
-class CommonFailureTree(FaultTrees):
+class CommonFailureTree(FaultTree):
     """
     Обычные деревья отказов
     """
     __mapper_args__ = {'polymorphic_identity': 3}
 
 
-class CCFFailureTree(FaultTrees):
+class CCFFailureTree(FaultTree):
     """
     Деревья отказов которые генерируются при создании ООП
     """
@@ -1179,7 +1249,7 @@ class TransferEnum(Enum):
     Not = 0
 
 
-class FTNodes(Base):
+class FTNode(Base):
     """
     Ноды
     Объекты иерархически связанные между собой из которых набирается дерево отказов
@@ -1203,14 +1273,16 @@ class FTNodes(Base):
     InLevel = Column(SmallInteger, primary_key=True, nullable=False)
     """ -1 - трансфер; 0 - не трансфер """
     Transfer = Column(SmallInteger, default=0)
+    """Determines if a node is a transfer"""
     Neg = Column(SmallInteger, default=0)
+    """Determines if a node is a negation node"""
     flag = Column(Boolean)
 
-    Event = relationship(Events, back_populates='Nodes', uselist=False, lazy='select')
+    Event = relationship(Event, back_populates='Nodes', uselist=False, lazy='select')
     """Событие ноды"""
-    FatherNode = relationship(lambda: FTNodes, remote_side=[RecNum], backref='ChildNodes', lazy='select')
+    FatherNode = relationship(lambda: FTNode, remote_side=[RecNum], backref='ChildNodes', lazy='select')
     """Верхняя нода"""
-    FaultTree = relationship(FaultTrees, back_populates='Nodes', uselist=False, lazy='select')
+    FaultTree = relationship(FaultTree, back_populates='Nodes', uselist=False, lazy='select')
     """Дерево отказов"""
 
     #Upper logical disjunction node
@@ -1232,20 +1304,22 @@ class FailMode(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1277,33 +1351,43 @@ class ImpSetup(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
     SensFactor = Column(Float(24))
+    """Value of the factor used in the sensitivity calculation"""
     Bas = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of basic events"""
     CCFGroup = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of CCF groups"""
     Par = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of reliability parameters"""
     Att = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of attributes"""
     Sys = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of systems"""
     Comp = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of components"""
     BEGroup = Column(SmallInteger)
+    """Value specify the need to calculate importance measures of basic event groups"""
     MCSCut = Column(Float(24))
     RefreshData = Column(SmallInteger)
     Extra = Column(Integer)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1313,8 +1397,10 @@ class LockUnLockHistory(Base):
     Num = Column(Integer, Identity(start=1, increment=1), primary_key=True)
     """Internal numeric representation of the object identifier
     (it is not recommended to set it manually)"""
-    EditUid = Column(Integer)
-    EditDate = Column(DateTime)
+    EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
+    EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    """Last modified date"""
     LockStatus = Column(Boolean)
 
 
@@ -1331,20 +1417,22 @@ class MCSPP(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1395,20 +1483,22 @@ class MCSPPSetup(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1445,8 +1535,9 @@ class MCSSetup(Base):
     ID = Column(Unicode(max_id_len), primary_key=True, nullable=False)
     """Object text identifier"""
     Text = Column(Unicode(max_decs_len))
-    """Text description"""
+    """Text descripti/on"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
     CutoffType = Column(SmallInteger)
@@ -1454,17 +1545,17 @@ class MCSSetup(Base):
     AbsCutoff = Column(Float(24))
     """ Относительное занчение критерия отсечения """
     RelCutoff = Column(Float(24))
+    Approx = Column(SmallInteger)
     """ Порядок опроксимации среднего значения
         FirstOrder = 1
         SecondOrder = 2
         ThirdOrder = 3
     """
-    Approx = Column(SmallInteger)
     Negated = Column(SmallInteger)
     """ Учитывать или нет при построении минимальных сечений ООП """
     IncCCF = Column(SmallInteger)
-    """ Максимум модулей"""
     MaxMod = Column(Integer)
+    """ Максимум модулей"""
     MaxDemod = Column(Integer)
     SaveCutoff = Column(Float(24))
     RefreshData = Column(SmallInteger)
@@ -1472,17 +1563,18 @@ class MCSSetup(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1518,31 +1610,33 @@ class Memo(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     Note = Column(NTEXT(1073741823))
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
-    FaultTrees = relationship(FaultTrees,
+    FaultTrees = relationship(FaultTree,
                               secondary=MemoRefs.__table__,
                               primaryjoin=lambda: (Memo.Num == MemoRefs.MemoNum) & (Memo.Type == MemoRefs.MemoType),
-                              secondaryjoin=(FaultTrees.Num == MemoRefs.RecNum) & (FaultTrees.Type == MemoRefs.RecType),
+                              secondaryjoin=(FaultTree.Num == MemoRefs.RecNum) & (FaultTree.Type == MemoRefs.RecType),
                               backref='Memos')
 
     """
-    BasicEvents = relationship(BasicEvents,
+    BasicEvents = relationship(BasicEvent,
                                secondary=MemoRefs.__table__,
                                primaryjoin=lambda: (Memo.Num == MemoRefs.MemoNum) & (Memo.Type == MemoRefs.MemoType),
                                secondaryjoin=(BasicEvents.Num == MemoRefs.RecNum) & (
@@ -1556,17 +1650,17 @@ class Memo(Base):
                                          Sequence.Type == MemoRefs.RecType),
                              backref='Memos')
 
-    Gates = relationship(Gates,
+    Gates = relationship(Gate,
                          secondary=MemoRefs.__table__,
                          primaryjoin=lambda: (Memo.Num == MemoRefs.MemoNum) & (Memo.Type == MemoRefs.MemoType),
-                         secondaryjoin=(Gates.Num == MemoRefs.RecNum) & (Gates.Type == MemoRefs.RecType),
+                         secondaryjoin=(Gate.Num == MemoRefs.RecNum) & (Gate.Type == MemoRefs.RecType),
                          backref='Memos')
 
-    HouseEvents = relationship(HouseEvents,
+    HouseEvents = relationship(HouseEvent,
                                secondary=MemoRefs.__table__,
                                primaryjoin=lambda: (Memo.Num == MemoRefs.MemoNum) & (Memo.Type == MemoRefs.MemoType),
-                               secondaryjoin=(HouseEvents.Num == MemoRefs.RecNum) & (
-                                           HouseEvents.Type == MemoRefs.RecType),
+                               secondaryjoin=(HouseEvent.Num == MemoRefs.RecNum) & (
+                                           HouseEvent.Type == MemoRefs.RecType),
                                backref='Memos')
 
     CCFGroups = relationship(CCFGroup,
@@ -1613,7 +1707,7 @@ class ParamUnitEnum(Enum):
     Year = 6
 
 
-class Params(Base):
+class Param(Base):
     """
     Параметры
     Объекты, содержащие численные значения, используемые при квантификации моделей.
@@ -1630,7 +1724,9 @@ class Params(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     Mean = Column(Float(24))
+    """Mean value calculated from parametric uncertainty"""
     DistType = Column(SmallInteger)
     DistPar1 = Column(Float(24))
     DistPar2 = Column(Float(24))
@@ -1646,28 +1742,29 @@ class Params(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
-class ProbabilityParam(Params):
+class ProbabilityParam(Param):
     """
     Тип параметра Probability
     """
     __mapper_args__ = {"polymorphic_identity": 14}
 
 
-class FailureRateParam(Params):
+class FailureRateParam(Param):
     """
     Тип параметра Falilure Rate
     """
@@ -1676,7 +1773,7 @@ class FailureRateParam(Params):
     }
 
 
-class FrequencyParam(Params):
+class FrequencyParam(Param):
     """
     Тип параметра Frequency
     """
@@ -1685,7 +1782,7 @@ class FrequencyParam(Params):
     }
 
 
-class MTTRParam(Params):
+class MTTRParam(Param):
     """
     Тип параметра MTTR
     """
@@ -1694,7 +1791,7 @@ class MTTRParam(Params):
     }
 
 
-class TestIntervalParam(Params):
+class TestIntervalParam(Param):
     """
     Тип параметра TestInterval
     """
@@ -1703,7 +1800,7 @@ class TestIntervalParam(Params):
     }
 
 
-class TimeToFirstTestParam(Params):
+class TimeToFirstTestParam(Param):
     """
     Тип параметра TimeToFirstTest
     """
@@ -1712,7 +1809,7 @@ class TimeToFirstTestParam(Params):
     }
 
 
-class MissionTimeParam(Params):
+class MissionTimeParam(Param):
     """
     Тип параметра Mission Time
     """
@@ -1721,7 +1818,7 @@ class MissionTimeParam(Params):
     }
 
 
-class BetaFactorParam(Params):
+class BetaFactorParam(Param):
     """
     Тип параметра для отказов по общей причине Beta Factor
     """
@@ -1730,7 +1827,7 @@ class BetaFactorParam(Params):
     }
 
 
-class GammaFactorParam(Params):
+class GammaFactorParam(Param):
     """
     Тип параметра для отказов по общей причине Gamma Factor
     """
@@ -1739,7 +1836,7 @@ class GammaFactorParam(Params):
     }
 
 
-class DeltaFactorParam(Params):
+class DeltaFactorParam(Param):
     """
     Тип параметра для отказов по общей причине Delta Factor
     """
@@ -1748,7 +1845,7 @@ class DeltaFactorParam(Params):
     }
 
 
-class Alpha2FactorParam(Params):
+class Alpha2FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 2 фактор
     """
@@ -1757,7 +1854,7 @@ class Alpha2FactorParam(Params):
     }
 
 
-class Alpha3FactorParam(Params):
+class Alpha3FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 3 фактор
     """
@@ -1766,7 +1863,7 @@ class Alpha3FactorParam(Params):
     }
 
 
-class Alpha4FactorParam(Params):
+class Alpha4FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 4 фактор
     """
@@ -1775,7 +1872,7 @@ class Alpha4FactorParam(Params):
     }
 
 
-class Alpha5FactorParam(Params):
+class Alpha5FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 5 фактор
     """
@@ -1784,7 +1881,7 @@ class Alpha5FactorParam(Params):
     }
 
 
-class Alpha6FactorParam(Params):
+class Alpha6FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 6 фактор
     """
@@ -1793,7 +1890,7 @@ class Alpha6FactorParam(Params):
     }
 
 
-class Alpha7FactorParam(Params):
+class Alpha7FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 7 фактор
     """
@@ -1802,7 +1899,7 @@ class Alpha7FactorParam(Params):
     }
 
 
-class Alpha8FactorParam(Params):
+class Alpha8FactorParam(Param):
     """
     Тип параметра для отказа по общей причине Альфа 8 фактор
     """
@@ -1823,6 +1920,7 @@ class ProjSettings(Base):
     SettingValue = Column(Unicode(40))
     """Parameter value"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
 
 
 class Propagated(Base):
@@ -1839,22 +1937,24 @@ class Properties(Base):
     __tablename__ = 'Properties'
 
     Num = Column(SmallInteger, primary_key=True)
+    """Internal numeric representation of the object identifier"""
     Text = Column(Unicode(300))
     """Text description"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1892,6 +1992,7 @@ class Report(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     DefaultValue = Column(SmallInteger)
     ReportType = Column(SmallInteger)
     FontName1 = Column(Unicode(40))
@@ -1939,17 +2040,18 @@ class Report(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -1990,22 +2092,26 @@ class Sequence(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     CalcType = Column(SmallInteger)
     Mean = Column(Float(24))
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    ConsequenceEvents = relationship("ConsequenceEvent", secondary="SeqCon", backref='Sequences', viewonly=True)
+    
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 class SysBC(Base):
@@ -2096,7 +2202,7 @@ class SysTestProc(Base):
     flag = Column(Boolean)
 
 
-class Systems(Base):
+class System(Base):
     """
     Сиcтемы
     Объекты, объединяющие компоненты, входящие в одну систему
@@ -2113,56 +2219,58 @@ class Systems(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    SubSystems = relationship(lambda: Systems,
+    SubSystems = relationship(lambda: System,
                               secondary=SysSubsys.__table__,
-                              primaryjoin=lambda: Systems.Num == SysSubsys.SysNum,
-                              secondaryjoin=lambda: Systems.Num == SysSubsys.SubsysNum,
+                              primaryjoin=lambda: System.Num == SysSubsys.SysNum,
+                              secondaryjoin=lambda: System.Num == SysSubsys.SubsysNum,
                               backref='ParentSystems')
-    """Subsystems (not working)"""
+    """Subsystems (not working for importance measures calculation)"""
 
-    Components = relationship(Components,
+    Components = relationship(Component,
                               secondary=SysComp.__table__,
-                              primaryjoin=lambda: (Systems.Num == SysComp.RecNum1) & (Systems.Type == SysComp.RecType1),
-                              secondaryjoin=(Components.Num == SysComp.RecNum2) & (Components.Type == SysComp.RecType2),
+                              primaryjoin=lambda: (System.Num == SysComp.RecNum1) & (System.Type == SysComp.RecType1),
+                              secondaryjoin=(Component.Num == SysComp.RecNum2) & (Component.Type == SysComp.RecType2),
                               back_populates='Systems')
 
-    FaultTrees = relationship(FaultTrees,
+    FaultTrees = relationship(FaultTree,
                               secondary=SysFT.__table__,
-                              primaryjoin=lambda: (Systems.Num == SysFT.RecNum1) & (Systems.Type == SysFT.RecType1),
-                              secondaryjoin=(FaultTrees.Num == SysFT.RecNum2) & (FaultTrees.Type == SysFT.RecType2),
+                              primaryjoin=lambda: (System.Num == SysFT.RecNum1) & (System.Type == SysFT.RecType1),
+                              secondaryjoin=(FaultTree.Num == SysFT.RecNum2) & (FaultTree.Type == SysFT.RecType2),
                               backref='Systems')
 
-    TopGates = relationship(Gates,
+    TopGates = relationship(Gate,
                             secondary=SysGate.__table__,
-                            primaryjoin=lambda: Systems.Num == SysGate.SysNum,
-                            secondaryjoin=Gates.Num == SysGate.EventNum,
+                            primaryjoin=lambda: System.Num == SysGate.SysNum,
+                            secondaryjoin=Gate.Num == SysGate.EventNum,
                             backref='Systems')
 
     BCSets = relationship(lambda: BCSet,
                           secondary=SysBC.__table__,
-                          primaryjoin=lambda: Systems.Num == SysBC.SysNum,
+                          primaryjoin=lambda: System.Num == SysBC.SysNum,
                           secondaryjoin=lambda: BCSet.Num == SysBC.BCNum,
                           backref='Systems')
     TestProcedures = relationship(lambda: TestProc,
                                   secondary=SysTestProc.__table__,
-                                  primaryjoin=lambda: Systems.Num == SysTestProc.SysNum,
+                                  primaryjoin=lambda: System.Num == SysTestProc.SysNum,
                                   secondaryjoin=lambda: TestProc.Num == SysTestProc.TestProcNum,
                                   backref='Systems')
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -2182,6 +2290,7 @@ class TDSetup(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     Time1 = Column(Float(24))
     Time2 = Column(Float(24))
     MCSCut = Column(Float(24))
@@ -2190,17 +2299,18 @@ class TDSetup(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -2220,20 +2330,22 @@ class TestProc(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -2266,17 +2378,18 @@ class TextMacro(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -2307,6 +2420,7 @@ class UncSetup(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     CalcType = Column(SmallInteger)
     Time = Column(Float(24))
 
@@ -2330,6 +2444,7 @@ class UncSetup(Base):
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
@@ -2337,11 +2452,11 @@ class UncSetup(Base):
     flag = Column(Boolean)
 
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
 
@@ -2355,7 +2470,7 @@ t_UncertaintyFiles = Table(
 )
 
 
-class Users(Base):
+class User(Base):
     """
     Пользователи
     Используются для идентификации создателей и редакторов любых перечисленных объектов
@@ -2376,21 +2491,23 @@ class Users(Base):
     Text = Column(Unicode(max_decs_len))
     """Text description"""
     Tag = Column(SmallInteger)
+    """Highlight object record with color"""
     UserRights = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
     EditUid = Column(Integer, ForeignKey('Users.Num'))
+    """Internal representation of the numeric ID of the user who last made changes"""
     ReviewDate = Column(DateTime)
     ReviewUid = Column(Integer, ForeignKey('Users.Num'))
     ApprovedDate = Column(DateTime)
     ApprovedUid = Column(Integer, ForeignKey('Users.Num'))
     flag = Column(Boolean)
 
-    EditUser = relationship(lambda: Users, foreign_keys=[EditUid], remote_side=[Num])
+    EditUser = relationship(lambda: User, foreign_keys=[EditUid], remote_side=[Num])
     """The last user to edit the record"""
-    ReviewUser = relationship(lambda: Users, foreign_keys=[ReviewUid], remote_side=[Num])
+    ReviewUser = relationship(lambda: User, foreign_keys=[ReviewUid], remote_side=[Num])
     """The user who performed the check"""
-    ApprovedUser = relationship(lambda: Users, foreign_keys=[ApprovedUid], remote_side=[Num])
+    ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid], remote_side=[Num])
     """The user approves the changes"""
 
 

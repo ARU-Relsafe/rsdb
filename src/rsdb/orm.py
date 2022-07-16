@@ -48,8 +48,11 @@ class Acase(Base):
     TextRes = Column(SmallInteger)
     """Specifies whether to save results as text"""
     GERes = Column(SmallInteger)
+    """Specifies whether to save gates as text"""
     BERes = Column(SmallInteger)
+    """Specifies whether to save basic events as text"""
     ExchRes = Column(SmallInteger)
+    """Specifies whether to save exch. events as text"""
     Unit = Column(SmallInteger)
     EditDate = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     """Last modified date"""
@@ -79,7 +82,6 @@ class FailureTreeAcase(Acase):
     BCSets = relationship("BCSet", secondary="AcaseBC")
     """List of boundary condition sets for calculation"""
 
-    # Ссылка на спецификацию расчёта минимальных сечений
     MCSSetup = relationship(
         lambda: MCSSetup,
         secondary=lambda: AcaseSpec.__table__,
@@ -88,8 +90,8 @@ class FailureTreeAcase(Acase):
         uselist=False,
         #backref=backref('FailureTreeAcases', uselist=True),
         overlaps=acase_spec_overlap)
+    """Ссылка на спецификацию расчёта минимальных сечений"""
 
-    # Ссылка на спецификацию расчёта неопределённости
     UncSetup = relationship(
         lambda: UncSetup,
         secondary=lambda: AcaseSpec.__table__,
@@ -98,8 +100,8 @@ class FailureTreeAcase(Acase):
         uselist=False,
         #backref=backref('FailureTreeAcases', uselist=True),
         overlaps=acase_spec_overlap)
+    """Ссылка на спецификацию расчёта неопределённости"""
 
-    # Ссылка на спецификацию расчёта показателей значимости
     ImpSetup = relationship(
         lambda: ImpSetup,
         secondary=lambda: AcaseSpec.__table__,
@@ -108,8 +110,8 @@ class FailureTreeAcase(Acase):
         uselist=False,
         #backref=backref('FailureTreeAcases', uselist=True),
         overlaps=acase_spec_overlap)
+    """Ссылка на спецификацию расчёта показателей значимости"""
 
-    # Ссылка на спецификацию Time Dep расчёта
     TDSetup = relationship(
         lambda: TDSetup,
         secondary=lambda: AcaseSpec.__table__,
@@ -118,6 +120,7 @@ class FailureTreeAcase(Acase):
         uselist=False,
         #backref=backref('FailureTreeAcases', uselist=True),
         overlaps=acase_spec_overlap)
+    """Ссылка на спецификацию Time Dep расчёта"""
     
 class SequenceAcase(Acase):
     """
@@ -469,8 +472,8 @@ class BCSet(Base):
 class BCSetAtt(Base):
     __tablename__ = 'BCSetAtt'
 
-    BCNum = Column(Integer, primary_key=True, nullable=False)
-    AttNum = Column(Integer, primary_key=True, nullable=False)
+    BCNum = Column(Integer, ForeignKey('BCSet.Num'), primary_key=True, nullable=False)
+    AttNum = Column(Integer, ForeignKey('Attrib.Num'), primary_key=True, nullable=False)
     flag = Column(Boolean)
 
 
@@ -488,7 +491,16 @@ class CCFEventPar(Base):
     Таблица связи событий ООП и их параметров
     """
     __tablename__ = 'CCFEventPar'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['EventType', 'EventNum'],
+            ['Events.Type', 'Events.Num'],
+            name='fk_event_entry'),
+        ForeignKeyConstraint(
+            ['ParType', 'ParNum'],
+            ['Params.Type', 'Params.Num'],
+            name='fk_param_entry'),
+    )
     IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
     EventType = Column(SmallInteger, nullable=False)
     EventNum = Column(Integer, nullable=False)
@@ -499,19 +511,29 @@ class CCFEventPar(Base):
 
 
 class CCFModelEnum(Enum):
+    """
+    CCF model
+    """
     Unknown = 0
     Beta = 1
+    """Beta factor"""
     MGL = 2
+    """Multiple Greek Letter"""
     Alpha4 = 3
+    """Alpha factor with 4 events, need three alpha parameters"""
     Alpha4Staggered = 5
+    """Alpha factor with 4 events, need three alpha parameters (staggered testing)"""
     Alpha8 = 6
+    """Alpha factor with 8 events, need seven alpha parameters"""
     Alpha8Staggered = 12
+    """Alpha factor with 8 events, need seven alpha parameters (staggered testing)"""
 
 
 class CCFGroup(Base):
     """
     Группы ООП
     Объекты, для которых указываются базовые события, к ним относящиеся.
+    The CCF groups in RiskSpectrum PSA/FTA are used for a type of semi-automatic common cause failure (CCF) modelling.
     """
     __tablename__ = 'CCFGroup'
     Type = Column(SmallInteger, primary_key=True, nullable=False)
@@ -547,18 +569,41 @@ class CCFGroup(Base):
 
 
 class CCFRec(Base):
+    """
+    Таблица связи сегенерированных комбинацийсобытий ООП с группой ООП
+    """
     __tablename__ = 'CCFRec'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['CCGType', 'CCGNum'],
+            ['CCFGroup.Type', 'CCFGroup.Num'],
+            name='fk_ccfgroup_entry'),
+        ForeignKeyConstraint(
+            ['EventType', 'EventNum'],
+            ['Events.Type', 'Events.Num'],
+            name='fk_event_entry'),
+    )
     CCGType = Column(SmallInteger, primary_key=True, nullable=False)
     CCGNum = Column(Integer, primary_key=True, nullable=False)
     EventNum = Column(Integer, primary_key=True, nullable=False)
     EventType = Column(SmallInteger)
     flag = Column(Boolean)
 
-
 class CCGBasic(Base):
+    """
+    Таблица связи базисных событий на основании которых генерируются событий ООП с группой ООП
+    """
     __tablename__ = 'CCGBasic'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['CCGType', 'CCGNum'],
+            ['CCFGroup.Type', 'CCFGroup.Num'],
+            name='fk_ccfgroup_entry'),
+        ForeignKeyConstraint(
+            ['EventType', 'EventNum'],
+            ['Events.Type', 'Events.Num'],
+            name='fk_event_entry'),
+    )
     CCGType = Column(SmallInteger, primary_key=True, nullable=False)
     CCGNum = Column(Integer, primary_key=True, nullable=False)
     EventNum = Column(Integer, primary_key=True, nullable=False)
@@ -663,6 +708,9 @@ t_Duplicated = Table(
 class EventTree(Base):
     """
     Деревья событий
+    An event tree is an inductive analytical diagram in which an event is analyzed
+    using Boolean logic to examine a chronological series of subsequent events
+    or consequences
     """
     __tablename__ = 'ET'
 
@@ -734,13 +782,13 @@ class ETNode(Base):
      Ноды образуют граф взаимосвязей между функциональными событиями в дереве событий
     """
     __tablename__ = 'ETNodes'
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ['ETNum'],
-            ['ET.Num'],
-            name='fk_et_entry'),
-    )
-    ETNum = Column(Integer, primary_key=True, nullable=False)
+    # __table_args__ = (
+    #     ForeignKeyConstraint(
+    #         ['ETNum'],
+    #         ['ET.Num'],
+    #         name='fk_et_entry'),
+    # )
+    ETNum = Column(Integer, ForeignKey('ET.Num'), primary_key=True, nullable=False)
     Num = Column(SmallInteger, primary_key=True, nullable=False)
     """Internal numeric representation of the object identifier
     (it is not recommended to set it manually)"""
@@ -799,6 +847,9 @@ class EventAtt(Base):
     flag = Column(Boolean)
 
 class EventExch(Base):
+    """
+    Таблица связи между базисным событием и событиями подмены
+    """
     __tablename__ = 'EventExch'
     __table_args__ = (
         ForeignKeyConstraint(
@@ -810,7 +861,6 @@ class EventExch(Base):
             ['Events.Num', 'Events.Type'],
             name='fk_exch_entry'),
     )
-    
     EventType = Column(SmallInteger)
     EventNum = Column(Integer, primary_key=True, nullable=False)
     CondType = Column(SmallInteger)
@@ -862,6 +912,16 @@ class EventPar(Base):
     """
     __tablename__ = 'EventPar'
 
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['EventType', 'EventNum'],
+            ['Events.Type', 'Events.Num'],
+            name='fk_event_entry'),
+        ForeignKeyConstraint(
+            ['ParType', 'ParNum'],
+            ['Params.Type', 'Params.Num'],
+            name='fk_param_entry'),
+    )
     EventNum = Column(Integer, primary_key=True, nullable=False)
     ParType = Column(SmallInteger, primary_key=True, nullable=False)
     EventType = Column(SmallInteger)
@@ -905,10 +965,12 @@ class CalcTypeEnum(Enum):
     Unknown = 0
     Q = 1
     Q_T = 3
+    """Unavailability at time, Q(t)"""
     F = 4
     F_T = 6
     W = 7
     W_T = 9
+    """Unconditional failure intensity at time, W(t)"""
 
 
 class InitEnamlEnum(Enum):
@@ -964,7 +1026,8 @@ class Event(Base):
 
 class BasicEvent(Event):
     """
-    Базисное событие
+    Базисное событие.
+    The "root cause" events in a fault tree, for which no further development of the tree logic are made.
     """
     __mapper_args__ = {'polymorphic_identity': 5}
 
@@ -1005,10 +1068,18 @@ class BasicEvent(Event):
         secondaryjoin=lambda: TestProc.Num == TestProcEvent.TestProcNum,
         backref='BasicEvents')
 
+    ExchangeEvents= relationship(
+        lambda: BasicEvent,
+        secondary=lambda: EventExch.__table__,
+        primaryjoin=lambda: (BasicEvent.Num == EventExch.EventNum) & (BasicEvent.Type == EventExch.EventType),
+        secondaryjoin=lambda: (EventExch.ExchNum == BasicEvent.Num) & (EventExch.ExchType == BasicEvent.Type) )
+
 
 class Gate(Event):
     """
-    Гейты
+    The logical relationship between the events in the fault tree is modelled
+    with Boolean logic operators called gates. Each gate has a certain operator
+    type, such as OR, AND, K/N, NOR or NAND.
     """
     __mapper_args__ = {'polymorphic_identity': 6}
 
@@ -1022,8 +1093,9 @@ class Gate(Event):
 
 class HouseEvent(Event):
     """
-    House events
-    Постулируемые базисные события
+    Постулируемые базисные события.
+    House events are a special type of basic events that can have only two "values":
+    Logically TRUE or FALSE.
     """
     __mapper_args__ = {'polymorphic_identity': 7}
 
@@ -1037,7 +1109,10 @@ class HouseEvent(Event):
 
 class ConsequenceEvent(Event):
     """
-    Sequence
+    События - последствия
+    A consequence can be assigned to each event tree sequence end point.
+    Several sequences can share the same consequence. A consequence groups together sequences
+    which lead to the same end state, thereby defining a top event level in the model.
     """
     __mapper_args__ = {'polymorphic_identity': 8}
     
@@ -1045,9 +1120,9 @@ class ConsequenceEvent(Event):
 
 class TemplateEvent(Event):
     """
-        Собятия с возможностью генерирования по шаблону. Объекты, используя которые можно,
-        основываясь на построении имен по определенным правилам, присваивать некоторые
-        свойства целым группам базовых событий
+    События с возможностью генерирования по шаблону. Объекты, используя которые можно,
+    основываясь на построении имен по определенным правилам, присваивать некоторые
+    свойства целым группам базовых событий
     """
     __mapper_args__ = {'polymorphic_identity': 9}
     Attributes = relationship(
@@ -1059,29 +1134,41 @@ class TemplateEvent(Event):
 
 
 class InitiatingEvent(Event):
-    """Исхожные события (в дереве событий)"""
+    """
+    Исхожные события (в дереве событий)
+    The event or state that constitutes the "starting point" in an event tree,
+    from which all possible scenarios originate. The initiating event is usually a disturbance or malfunction.
+    In RiskSpectrum PSA/FTA, an initiating event can be a basic event, a fault tree gate or a consequence used in other event trees.
+    """
     __mapper_args__ = {'polymorphic_identity': 10}
     
 
 
 class FunctionEvent(Event):
-    """Функциональные события (в дереве событий)"""
+    """
+    Функциональные события (в дереве событий)
+    The events that affect the outcome of the scenarios modelled in an event tree.
+    These events are normally shown on the top of the event tree drawing.
+    In RiskSpectrum PSA/FTA, the function events can be either fault tree gates or basic events.
+    """
     __mapper_args__ = {'polymorphic_identity': 11}
 
-#     BasicEvents = relationship(
-#         "BasicEvent",
-#         secondary="FEInputs",
-#         foreign_keys=[FunctionEventInput.fk_event_entry])
+    # BasicEvents = relationship(
+    #     lambda: BasicEvent,
+    #     secondary=lambda: FEInputs.__table__,
+    #     primaryjoin = lambda: (FunctionEvent.Num == FunctionEventInput.FENum) & (FunctionEvent.Type == FunctionEventInput.FEType),
+    #     secondaryjoin = lambda: (FunctionEventInput.InputNum =  )
+    """Basic events that are inputs to a function event"""
 
-#     Gates = relationship(
-#         "Gates",
-#         secondary="FEInputs",
-#         foreign_keys=[FunctionEventInput.fk_input_entry])
+    # Gates = relationship(
+    #     "Gates",
+    #     secondary="FEInputs",
+    #     foreign_keys=[FunctionEventInput.fk_input_entry])
+    """Gates that are inputs to a function event"""
+    
+    #BCSets = relationship("BCSet", secondary="FEInputs")
+    """Boundary condition set linked with functional event"""
 
-#     BCSets = relationship(
-#         "BCSet",
-#         secondary="FEInputs",
-#        foreign_keys=[FunctionEventInput.fk_bcset_entry])
     
 class CCFEvent(Event):
     """
@@ -1135,17 +1222,13 @@ class FunctionEventInput(Base):
             ['InputNum', 'InputType'],
             ['Events.Num', 'Events.Type'],
             name='fk_input_entry'),
-        ForeignKeyConstraint(
-            ['BCNum'],
-            ['BCSet.Num'],
-            name='fk_bcset_entry'),
     )
     AltNum = Column(Integer, primary_key=True, nullable=False)
     FEType = Column(SmallInteger, nullable=False)
     FENum = Column(Integer, primary_key=True, nullable=False)
     InputType = Column(SmallInteger)
     InputNum = Column(Integer)
-    BCNum = Column(Integer)
+    BCNum = Column(Integer, ForeignKey('BCSet.Num'))
     flag = Column(Boolean)
 
 
@@ -1155,7 +1238,10 @@ class TagEnum(Enum):
 
 
 class FaultTree(Base):
-    """ Дерево отказов """
+    """
+    Дерево отказов.
+    A tree structure starting with the top event, breaking it down into all possible causes.
+    """
     __tablename__ = 'FT'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
@@ -1199,7 +1285,10 @@ class FaultTree(Base):
                            secondaryjoin=lambda: (FTNode.RecNum == Gate.Num) & (FTNode.RecType == Gate.Type),
                            uselist=False,
                            viewonly=True)
-    """Верхний гейт в дереве"""
+    """
+    Верхний гейт в дереве.
+    The undesired event or state for which a fault tree is built.
+    """
 
     TopNode = relationship(lambda: FTNode,
                            primaryjoin=lambda: (FaultTree.Num == FTNode.FTNum) & (
@@ -1405,6 +1494,9 @@ class LockUnLockHistory(Base):
 
 
 class MCSPP(Base):
+    """
+    MCS Post Proc. Action
+    """
     __tablename__ = 'MCSPP'
 
     Type = Column(SmallInteger, primary_key=True, nullable=False)
@@ -1435,7 +1527,9 @@ class MCSPP(Base):
     ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
-
+    Actions = relationship('MCSPPRules', back_populates='MCSPP')
+    Setup = relationship('MCSPPSetup', secondary='MCSPPSetupAction', back_populates='PPActions')
+    
 class PPRuleTypeEnum(Enum):
     Include = 1
     Exclude = 2
@@ -1446,10 +1540,16 @@ class PPRuleTypeEnum(Enum):
 
 class MCSPPRules(Base):
     """
+    Actions. You can add and delete events and delete MCS with the post processing actions you define
     Таблица правил постпроцессинга минимальных сечений
     """
     __tablename__ = 'MCSPPRules'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['RecNum', 'RecType'],
+            ['MCSPP.Num', 'MCSPP.Type'],
+            name='fk_mcspp_entry'),
+    )
     IDNum = Column(Integer, Identity(start=1, increment=1), primary_key=True)
     RecType = Column(SmallInteger, nullable=False)
     RecNum = Column(Integer, nullable=False)
@@ -1465,7 +1565,8 @@ class MCSPPRules(Base):
     IDFilter9 = Column(Unicode(21))
     IDFilter10 = Column(Unicode(21))
     flag = Column(Boolean)
-
+ 
+    MCSPP = relationship("MCSPP", back_populates='Actions')
 
 class MCSPPSetup(Base):
     """
@@ -1501,13 +1602,24 @@ class MCSPPSetup(Base):
     ApprovedUser = relationship(lambda: User, foreign_keys=[ApprovedUid])
     """The user approves the changes"""
 
+    PPActions = relationship('MCSPP', secondary='MCSPPSetupAction', back_populates='Setup')
+
 
 class MCSPPSetupAction(Base):
     """
     Таблица связи специйикации постпроцессинга и правил
     """
     __tablename__ = 'MCSPPSetupAction'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['SetupNum', 'SetupType'],
+            ['MCSPPSetup.Num', 'MCSPPSetup.Type'],
+            name='fk_ppsetup_entry'),
+        ForeignKeyConstraint(
+            ['PPNum', 'PPType'],
+            ['MCSPP.Num', 'MCSPP.Type'],
+            name='fk_pprule_entry'),
+    )
     SetupNum = Column(Integer, primary_key=True, nullable=False)
     PPNum = Column(Integer, primary_key=True, nullable=False)
     SetupType = Column(SmallInteger)
@@ -1699,6 +1811,10 @@ class DistributionEnum(Enum):
 
 
 class ParamUnitEnum(Enum):
+    """
+    One can specify one of the following units for Failure rate, Frequency, Repair time,
+    Test interval, Time to first test and Mission time.
+    """
     Second = 1
     Minute = 2
     Hour = 3
@@ -1711,6 +1827,9 @@ class Param(Base):
     """
     Параметры
     Объекты, содержащие численные значения, используемые при квантификации моделей.
+    The numerical values used in the reliability models. In RiskSpectrum PSA/FTA,
+    the parameters are physically separate data objects with a name, a point estimate (mean) value,
+    and an optional uncertainty distribution.
     """
     __tablename__ = 'Params'
     Type = Column(SmallInteger, primary_key=True, nullable=False)
@@ -2078,7 +2197,10 @@ class SeqCon(Base):
 
 class Sequence(Base):
     """
-    Таблица последовательностей. Таблица автоматически генерируется RiskSpectrum`ом. Желательно только чтение
+    Таблица последовательностей. Таблица автоматически генерируется RiskSpectrum`ом. Желательно только чтение.
+    A path through the event tree, a scenario. The sequences in an event tree are described
+    in terms of success or failure of the function events in the event tree.
+    (read only)
     """
     __tablename__ = 'Sequence'
 
@@ -2395,7 +2517,24 @@ class TextMacro(Base):
 
 class TopAcase(Base):
     __tablename__ = 'TopAcase'
-
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['AcaseNum', 'AcaseType'],
+            ['Acase.Num', 'Acase.Type'],
+            name='fk_acase_entry'),
+        ForeignKeyConstraint(
+            ['TopType', 'TopNum'],
+            ['Gate.Type', 'Gate.Num'],
+            name='fk_gate_entry'),
+        ForeignKeyConstraint(
+            ['TopType', 'TopNum'],
+            ['Sequence.Type', 'Sequence.Num'],
+            name='fk_seq_entry'),
+        ForeignKeyConstraint(
+            ['TopType', 'TopNum'],
+            ['ConsequenceEvent.Type', 'ConsequenceEvent.Num'],
+            name='fk_conseq_entry'),
+    )
     AcaseNum = Column(Integer, primary_key=True)
     TopType = Column(SmallInteger)
     TopNum = Column(Integer)
@@ -2437,6 +2576,7 @@ class UncSetup(Base):
         Manual = 2
     """
     Seed = Column(SmallInteger)
+    """The manual seed value"""
     MCSCut = Column(Float(24))
     ImpCut = Column(Float(24))
     RefreshData = Column(SmallInteger)
